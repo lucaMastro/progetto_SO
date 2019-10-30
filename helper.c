@@ -25,50 +25,50 @@ typedef struct MESSAGE{
 } message;
 
 
+void error(int line){
+	printf("error at line %d:\n", line);
+	perror("error");
+	exit(EXIT_FAILURE);
+
+}
+
 void inizializza_server(message **mex_list){ //sequenza di messaggi
 	int i;
 
 	for (i = 0; i < MAX_NUM_MEX; i++){
 //		mex = mex_list[i];	
 		//sharing mex
-		if ((mex_list[i] = (message*) mmap(NULL, (sizeof(message)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (message*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
-		}
-			//sharing usr_destination
+		if ((mex_list[i] = (message*) mmap(NULL, (sizeof(message)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (message*) -1)
+			error(42);
+		
+		//sharing usr_destination
 		if ((mex_list[i] -> usr_destination = (char*) mmap(NULL, (sizeof(char) * MAX_USR_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
+			error(46);
 		}	bzero(mex_list[i] -> usr_destination, MAX_USR_LEN);
 
 		//sharing usr_sender
 		if ((mex_list[i] -> usr_sender = (char*) mmap(NULL, (sizeof(char) * MAX_USR_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
+			error(51);
 		}	bzero(mex_list[i] -> usr_sender, MAX_USR_LEN);
 
 		//sharing object
 		if ((mex_list[i] -> object = (char*) mmap(NULL, (sizeof(char) * MAX_OBJ_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
+			error(56);
 		}	bzero(mex_list[i] -> object, MAX_OBJ_LEN);
 
 		//sharing text
 		if ((mex_list[i]-> text = (char*) mmap(NULL, (sizeof(char) * MAX_MESS_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
+			error(61);
 		}	bzero(mex_list[i] -> text, MAX_MESS_LEN);
 	
 		//sharing is_new 
-		if ((mex_list[i]-> is_new = (int*) mmap(NULL, (sizeof(int)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (int*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
-		}
+		if ((mex_list[i]-> is_new = (int*) mmap(NULL, (sizeof(int)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (int*) -1)
+			error(66);
+	
 		//sharing position 
-		if ((mex_list[i]-> position = (int*) mmap(NULL, (sizeof(int*)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (int*) -1){
-			perror("error mapping");
-			exit(EXIT_FAILURE);
-		}
+		if ((mex_list[i]-> position = (int*) mmap(NULL, (sizeof(int*)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (int*) -1)
+			error(70);
+		
 		*(mex_list[i]-> position) = i;
 	}
 	return;
@@ -79,17 +79,11 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
 	int found, again = 1, isnew, len_send, len_obj, len_text, pos, isfirst = 1, wb;
 	char *sender, *object, *text;
 	message *mex;
-	if ((mex = malloc(sizeof(mex))) == NULL){
-		perror("error line 86");
-		exit(EXIT_FAILURE);
-	}
+	if ((mex = malloc(sizeof(mex))) == NULL)
+		error(83);
 	
-	audit;
-	if ((mex -> usr_destination = malloc(sizeof(char) *MAX_USR_LEN)) == NULL){
-		perror("error line 91");
-		exit(EXIT_FAILURE);
-	};
-	printf("mex -> usr_dest: %p\n", mex -> usr_destination);
+	if ((mex -> usr_destination = malloc(sizeof(char) *MAX_USR_LEN)) == NULL)
+		error(86);
 
 	mex -> usr_sender = malloc(sizeof(char) *MAX_USR_LEN);
 	mex -> object = malloc(sizeof(char) *MAX_OBJ_LEN);
@@ -130,10 +124,8 @@ start:
 		if (strlen(object) <= MAX_OBJ_LEN - 4){
 			printf("vuoi rispondere al messaggio? (1 = si, qualsiasi altro tasto = no)\n");	
 
-			if (scanf("%d", &wb) == -1 && errno != EINTR){
-				perror("error");
-				exit(EXIT_FAILURE);
-			}
+			if (scanf("%d", &wb) == -1 && errno != EINTR)
+				error(128);
 			fflush(stdin);
 			write_int(sock_ds, wb, 154);
 			if (wb == 1)
@@ -144,10 +136,9 @@ usr_will:
 		/*CHECKING USR'S WILL*/
 		printf("cercare un altro messaggio? (1 = si, 0 = no)\npuoi anche inserire un numero negativo per cancellare l'ultimo messaggio letto.\n");
 		
-		if (scanf("%d", &again) == -1 && errno != EINTR){
-			perror("error9");
-			exit(EXIT_FAILURE);
-		}
+		if (scanf("%d", &again) == -1 && errno != EINTR)
+			error(140);
+
 		fflush(stdin);
 
 		if (again > 1){
@@ -196,10 +187,9 @@ int check_destination(char **usr_destination, char **dest){
 	if (dest != NULL)
 		copy = 1;
 
-        if ((destination_file = malloc(sizeof(char) * len)) == NULL){
-                perror("error checking existing dest");
-                exit(EXIT_FAILURE);
-        }
+        if ((destination_file = malloc(sizeof(char) * len)) == NULL)
+                error(191);
+
         bzero(destination_file, len);
         sprintf(destination_file, ".db/%s.txt", *usr_destination);
 
@@ -208,19 +198,16 @@ int check_destination(char **usr_destination, char **dest){
 
         if ((fileid = open(destination_file, O_RDONLY)) == -1){
                 if (errno == ENOENT){
-                //file doesnt exist
-                return 0;
+			//file doesnt exist
+                	return 0;
                 }
-                else{
-                        perror("error checkin esisting dest");
-                        exit(EXIT_FAILURE);
-                }
+                else
+                        error(205);
         }
 
-        if (close(fileid) == -1){
-                perror("damn error closing dest");
-                exit(EXIT_FAILURE);
-        }
+        if (close(fileid) == -1)
+                error(209);
+
         free(destination_file);
 
         return 1;
@@ -264,10 +251,8 @@ start:
 	read_string(acc_sock, &text, 238);
 
 	/*	TRY TO GET CONTROL	*/
-	if (semop(sem_write, &sops, 1) == -1){
-		perror("error decrementing sem");
-		exit(EXIT_FAILURE);
-	}		
+	if (semop(sem_write, &sops, 1) == -1)
+		error(255);
 
 	message *mex = mess_list[*position];
 
@@ -301,10 +286,8 @@ start:
 	
 	/*	GIVE CONTROL TO OTHERS	*/
 	sops.sem_op = 1;
-	if (semop(sem_write, &sops, 1) == -1){
-		perror("error incrementing sem");
-		exit(EXIT_FAILURE);
-	}
+	if (semop(sem_write, &sops, 1) == -1)
+		error(290);
 
 	return 0;
 }
@@ -321,10 +304,9 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	else{
 		another_code:
 		printf("dammi il codice del messaggio da eliminare.\nNOTA: se non hai messaggi associati al codice inserito, l'operazione verrà interrotta.\n(inserire un numero negativo per annullare)\n");
-		if (scanf("%d", &code) == -1 && errno != EINTR){
-			perror("error getting code");
-			exit(EXIT_FAILURE);
-		}
+		if (scanf("%d", &code) == -1 && errno != EINTR)
+			error(308);
+
 		fflush(stdin);
 
 		/*SCRIVO CODE*/
@@ -364,10 +346,9 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	if (mode < 0){
 usr_will:
 		printf("eliminare un altro messaggio? (0 = no, 1 = si)\n");
-		if (scanf("%d", &again) == -1 && errno != EINTR){
-			perror("error scanf at line 353");
-			exit(EXIT_FAILURE);
-		}
+		if (scanf("%d", &again) == -1 && errno != EINTR)
+			error(348);
+
 		fflush(stdin);
 		if (again < 0 || again > 1){
 			printf("codice non valido. riprova.\n\n");
@@ -414,11 +395,9 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 		sops.sem_flg = 0;
 		sops.sem_num = 0;
 		sops.sem_op = -1;
-		if (semop(sem_write, &sops, 1) == -1){
-			printf("errore semop alla riga %d\n", 393);
-			perror("error");
-			exit(EXIT_FAILURE);
-		}
+		if (semop(sem_write, &sops, 1) == -1)
+			error(398);
+		
 
 		/*START EMPTYNG MESSAGE*/
 		mex = mex_list[code];
@@ -441,11 +420,8 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
 		/*UPDATING SEM VALUE*/
 		sops.sem_op = 1;
-		if (semop(sem_write, &sops, 1) == -1){
-			printf("errore semop alla riga %d\n", 408);
-			perror("error");
-			exit(EXIT_FAILURE);
-		}
+		if (semop(sem_write, &sops, 1) == -1)
+			error(422);
 
 		/*SENDING ELIMINATION COMPLETED*/
 		compl = 1;
@@ -492,10 +468,9 @@ void invia_messaggio(int acc_sock, char *sender){
 restart:
 	//GETTING DATA AND THEIR LEN
 	printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
-	if (scanf("%ms", &destination) == -1 && errno != EINTR){
-		perror("errore inizializzare destinazione");
-		exit(-1);
-	}
+	if (scanf("%ms", &destination) == -1 && errno != EINTR)
+		error(470);
+
 	fflush(stdin);	
 
 	len_dest = strlen(destination);
@@ -508,10 +483,9 @@ restart:
 	len_send = strlen(sender);
 
 	printf("inserisci l'oggetto del messaggio (max %d caratteri):\n", MAX_OBJ_LEN);
-	if (scanf("%m[^\n]", &obj) == -1 && errno != EINTR){
-		perror("errore inizializzare oggetto");
-		exit(-1);
-	}
+	if (scanf("%m[^\n]", &obj) == -1 && errno != EINTR)
+		error(485);
+	
 	fflush(stdin);
 
 	len_obj = strlen(obj);
@@ -521,10 +495,9 @@ restart:
 	}
 
 	printf("inserisci il testo del messaggio: (max %d caratteri):\n", MAX_MESS_LEN);
-	if (scanf("%m[^\n]", &mes) == -1 && errno != EINTR){
-		perror("errore inizializzare messaggio");
-		exit(-1);
-	}
+	if (scanf("%m[^\n]", &mes) == -1 && errno != EINTR)
+		error(497);
+
 	fflush(stdin);
 
 	len_mess = strlen(mes);
@@ -718,10 +691,9 @@ is_read_op:
 }
 
 void close_server(int acc_sock, char *usr){
-	if (close(acc_sock) == -1){
-		perror("error closing accepted socket");
-		exit(EXIT_FAILURE);
-	}
+	if (close(acc_sock) == -1)
+		error(693);
+
 	printf("starting log out\n");	
 //	log_out(usr);	
 	printf("collegamento chiuso con successo.\n");
@@ -758,11 +730,9 @@ portal:
         printf("......................................................................................\n");
         printf("......................................................................................\n\n\n");
 	
-	if (scanf("%d", &operation) == -1 && errno != EINTR){
-		perror("error accepting operation");
-		exit(EXIT_FAILURE);
-	}
-	//while(getchar() != '\n') {};
+	if (scanf("%d", &operation) == -1 && errno != EINTR)
+		error(732);
+
 	fflush(stdin);
 
 	if (operation < 0 || operation > 2){
@@ -773,11 +743,8 @@ portal:
 
 	
 	//sending the selected operation:
-	if (write(sock_ds, &operation, sizeof(operation)) == -1){
-		perror("error sending usr's len");
-		         exit(EXIT_FAILURE);
-
-	}
+	if (write(sock_ds, &operation, sizeof(operation)) == -1)
+		error(745);
 	
 	if (operation == 0){
 		free(*usr);
@@ -787,10 +754,9 @@ portal:
 	//same structure for registration and login
 get_usr:
 	printf("inserisci username (max %d caratteri):\n", MAX_USR_LEN);
-	if (scanf("%s", *usr) == -1 && errno != EINTR){
-		perror("error reading username");
-	        exit(EXIT_FAILURE);
-	}
+	if (scanf("%s", *usr) == -1 && errno != EINTR)
+		error(756);
+
 	fflush(stdin);
 
 	len = strlen(*usr);
@@ -798,40 +764,28 @@ get_usr:
 		printf("usrname too long. try again:\n");
 		goto get_usr;
 	}
-	if (write(sock_ds, &len, sizeof(len)) == -1){
-		perror("error sending usr's len");
-		exit(EXIT_FAILURE);
-	}
+	if (write(sock_ds, &len, sizeof(len)) == -1)
+		error(765);
 
-	if (write(sock_ds, *usr, len) == -1){
-		perror("error sending usr");
-		exit(EXIT_FAILURE);
-	}
+	if (write(sock_ds, *usr, len) == -1)
+		error(768);
 pw_get:		
 	printf("inserisci password (max %d caratteri):\n", MAX_PW_LEN);
-	if (scanf("%ms", &pw) == -1 && errno != EINTR){
-		perror("error reading pass");
-	        exit(EXIT_FAILURE);
+	if (scanf("%ms", &pw) == -1 && errno != EINTR)
+		error(772);
 
-	}
 	len = strlen(pw);
 	if (len > MAX_PW_LEN){
 		printf("password too long. try again:\n");
 		goto pw_get;
 	}
-
-	//while(getchar() != '\n') {};
 	fflush(stdin);
 
-	if (write(sock_ds, &len, sizeof(len)) == -1){
-		perror("error sending pw's len");
- 		exit(EXIT_FAILURE);
-	}
+	if (write(sock_ds, &len, sizeof(len)) == -1)
+		error(784);
 	
-	if (write(sock_ds, pw, len) == -1){
-		perror("error sending usr");
-		exit(EXIT_FAILURE);
-	}
+	if (write(sock_ds, pw, len) == -1)
+		error(785);
 
 	//reading response:
 	read_int(sock_ds, &ret, 879);	
@@ -912,10 +866,9 @@ check_operation:
 		len_pw = strlen(pw);	
 
 		/*	MAKING THE STRING: ".db/<name_user>.txt"	*/
-		if ((file_name = malloc(sizeof(char) * (len_usr + 8) )) == NULL){
-			perror("error creating file (1)");
-			exit(EXIT_FAILURE);
-		}
+		if ((file_name = malloc(sizeof(char) * (len_usr + 8) )) == NULL)
+			error(867);
+
 		bzero(file_name, (len_usr + 8));
 		sprintf(file_name, ".db/%s.txt", *usr);
 
@@ -927,16 +880,12 @@ check_operation:
 					ret = 1; 
 					goto send_to_client;
 				}
-				else{
-					perror("error creating file");
-					exit(EXIT_FAILURE);
-				}
+				else
+					error(881);
 			}
 			//ive created file. i have to write pw and a bit: default 0.
-			if (write(fileid, pw, len_pw) == -1 || write(fileid, "\n0", 2) == -1){
-				perror("error writing file");
-				exit(EXIT_FAILURE);
-			}	
+			if (write(fileid, pw, len_pw) == -1 || write(fileid, "\n0", 2) == -1)
+				error(885);
 			printf("registrazione avvenuta.\n");
 	
 			goto send_to_client;
@@ -950,19 +899,15 @@ check_operation:
 					ret = 2;
 					goto send_to_client;
 				}
-				else{
-					perror("error opening file");
-					exit(EXIT_FAILURE);
-				}
+				else
+					error(900);
 			}
 			
 			/*	STARTING LOGIN PROCEDURE	*/
 			lseek(fileid, 0, SEEK_SET); //to start
 			for (i = 0; i < MAX_PW_LEN + 1; i++){
-				if (read(fileid, &curr, 1) == -1){
-					perror("error checking pw(1)");
-					exit(EXIT_FAILURE);
-				}
+				if (read(fileid, &curr, 1) == -1)
+					error(907);
 				if (curr == '\n')
 					break;
 				else
@@ -977,11 +922,9 @@ check_operation:
 			}
 		
 			/*	CHECK IF YET LOGED	*/
-			if (read(fileid, &is_log, 1) == -1){
-				perror("error checking if logged");
-				exit(EXIT_FAILURE);
+			if (read(fileid, &is_log, 1) == -1)
+				error(923);
 
-			}
 			if((atoi(&is_log)) == 1){
 				printf("usr already logged\n");
 				ret = 3; 
@@ -990,11 +933,9 @@ check_operation:
 
 			/*	SWITCHING THE LOG BIT	*/
 			lseek(fileid, i + 1, SEEK_SET); 
-			if (write(fileid, "1", 1) == -1){
-				perror("error logging usr");
-				exit(EXIT_FAILURE);
+			if (write(fileid, "1", 1) == -1)
+				error(934);
 
-			}
 			ret = 0;
 			can_i_exit = 1;
 		}
@@ -1004,10 +945,6 @@ send_to_client:
 	free(file_name);
 	/*	SENDING SERVER ANSWER TO CLIENT	*/
 	write_int(acc_sock, ret, 997);
-/*	if (write(acc_sock, &ret, sizeof(ret)) == -1){       
- 		perror("error sanding return value");
-		exit(EXIT_FAILURE);
-	}*/
 
 	if (!can_i_exit)//registration option completed
 		goto check_operation;
@@ -1057,11 +994,9 @@ select_operation:
 
 	printf("quale operazione vuoi svolgere?\n");
 
-	if (scanf("%d", &operation) == -1 && errno != EINTR){
-		perror("error scanf");
-		exit(-1);
-	}
-	//while(getchar() != '\n') {};	
+	if (scanf("%d", &operation) == -1 && errno != EINTR)
+		error(995);
+
 	fflush(stdin);
 
 	if (operation > 8 || operation < 0){
@@ -1140,31 +1075,25 @@ void log_out(char *usr){
 	int len, fileid, i;
 
 	len = strlen(usr);
-	if ((file_name = malloc(sizeof(char) * (len + 8))) == NULL){
-		perror("error malloc. i cant solve the log out request");
-		exit(EXIT_FAILURE);
-	}
+	if ((file_name = malloc(sizeof(char) * (len + 8))) == NULL)
+		error(1076);
+
 	sprintf(file_name, ".db/%s.txt", usr);
 
 	len = strlen(file_name);
-	if ((fileid = open(file_name, O_RDWR, 0666)) == -1){
-		perror("error opening file to logout");
-		exit(EXIT_FAILURE);
-	}	
+	if ((fileid = open(file_name, O_RDWR, 0666)) == -1)
+		error(1082);
 	
 	for (i = 0; i < MAX_PW_LEN + 1; i++){
-		if (read(fileid, &curr, 1) == -1){
-			perror("error checking pw(1)");
-			exit(EXIT_FAILURE);
-		}
+		if (read(fileid, &curr, 1) == -1)
+			error(1086);
+
 		if (curr == '\n')
 			break;
 	}
 	
-	if (write(fileid, "0", 1) == -1){
-		perror("error logging usr");
-		exit(EXIT_FAILURE);
-	}
+	if (write(fileid, "0", 1) == -1)
+		error(1093);
 
 	close(fileid);
 	free(file_name);
@@ -1242,58 +1171,38 @@ void stampa_bitmask(int *bitmask, int last){
 void write_string(int sock, char *string, int line){
 	int len = strlen(string);
 //	printf("string %s\nlen %d\n\n", string, len);
-	if (write(sock, &len, sizeof(len)) == -1){
-		printf("error write string at line %d (1)\n", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (write(sock, &len, sizeof(len)) == -1)
+		error(1172);
 
-	if (write(sock, string, len) == -1){
-		printf("error write string at line %d (2)\n", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (write(sock, string, len) == -1)
+		error(1175);
 }
 
 void read_string(int sock, char **string, int line){
 	int len;
 
-	if (read(sock, &len, sizeof(len)) == -1){
-		printf("error write at line %d (1)", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (read(sock, &len, sizeof(len)) == -1)
+		error(1182);
 	
-	if ((*string = malloc(sizeof(char) * len)) == NULL){
-		printf("error malloc at line %d.\n", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if ((*string = malloc(sizeof(char) * len)) == NULL)
+		error(1185);
 	bzero(*string, len);
 
-	if (read(sock, *string, len) == -1){
-		printf("error write at %d (2).\n", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (read(sock, *string, len) == -1)
+		error(1189);
 }
 
 void write_int(int sock, int num, int line){;
 
-	if (write(sock, &num, sizeof(num)) == -1){
-		printf("error write at line %d.\n", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (write(sock, &num, sizeof(num)) == -1)
+		error(1195);
 }
+
 
 void read_int(int sock, int *num, int line){
 
-	if (read(sock, num, sizeof(*num)) == -1){
-		printf("error read at line %d.\n", line);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (read(sock, num, sizeof(*num)) == -1)
+		error(1202);
 }
 
 int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
@@ -1316,19 +1225,18 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 	write_string(sock_ds, my_usr, 1307);
 
 	/*CREATING THE STRING: 	RE: <object>	*/
-	if ((re_obj = malloc(sizeof(char) * (len + 4))) == NULL){
-		perror("error malloc at 1302");
-		exit(EXIT_FAILURE);
-	} bzero(re_obj, len + 4);
+	if ((re_obj = malloc(sizeof(char) * (len + 4))) == NULL)
+		error(1226);
+
+	bzero(re_obj, len + 4);
 
 	sprintf(re_obj, "RE: %s", object);
 
 	/*GETTING THE TEXT FROM USR*/
 	printf("inserisci il messaggio:\n");
-	if (scanf("%m[^\n]", &text) == -1 && errno != EINTR){
-		perror("errore inizializzare oggetto");
-		exit(-1);
-	} 
+	if (scanf("%m[^\n]", &text) == -1 && errno != EINTR)
+		error(1235);
+
 	fflush(stdin);
 
 	/*SENDING MEX*/
@@ -1385,11 +1293,8 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 	sops.sem_flg = 0;
 	sops.sem_num = 0;
 	sops.sem_op = -1;
-	if (semop(sem_write, &sops, 1) == -1){
-		printf("errore semop alla riga %d\n", 393);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (semop(sem_write, &sops, 1) == -1)
+		error(1294);
 
 	for (i = 0; i < *last; i++){
 		if (my_mex[i] == 1){ //i is the index of a mex i have to free
@@ -1413,11 +1318,8 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 
 	/*UPDATING SEM VALUE*/
 	sops.sem_op = 1;
-	if (semop(sem_write, &sops, 1) == -1){
-		printf("errore semop alla riga %d\n", 408);
-		perror("error");
-		exit(EXIT_FAILURE);
-	}
+	if (semop(sem_write, &sops, 1) == -1)
+		error(1319);
 
 	write_int(acc_sock, bol, 1376);
 	free(dest);
@@ -1453,10 +1355,8 @@ void read_mex(int sock, message **mex_list, int *position, int semid){
 
 	read_string(sock, &one_string, 1445);
 	/*	TRY TO GET CONTROL	*/
-	if (semop(semid, &sops, 1) == -1){
-		perror("error at line 1453");
-		exit(EXIT_FAILURE);
-	}
+	if (semop(semid, &sops, 1) == -1)
+		error(1356);
 	
 	message *mex = mex_list[*position];
 
@@ -1485,10 +1385,9 @@ void read_mex(int sock, message **mex_list, int *position, int semid){
 	/*	GIVE CONTROL TO OTHERS	*/
 
 	sops.sem_op = 1;
-	if (semop(semid, &sops, 1) == -1){
-		perror("error at line 1453");
-		exit(EXIT_FAILURE);
-	}
+	if (semop(semid, &sops, 1) == -1)
+		error(1386);
+
 	free(one_string);
 }
 
@@ -1523,10 +1422,8 @@ void cambia_pass(int sock_ds){
 	char *new_pw;
 
 	printf("inserisci la nuova password:\n");
-	if (scanf("%ms", &new_pw) == -1 && errno != EINTR){
-		perror("error at 1526");
-		exit(EXIT_FAILURE);
-	}
+	if (scanf("%ms", &new_pw) == -1 && errno != EINTR)
+		error(1423);
 
 	write_string(sock_ds, new_pw, 1530);
 	read_int(sock_ds, &ret, 1519);
@@ -1544,10 +1441,8 @@ void mng_cambio_pass(int acc_sock, char *my_usr){
 	len = strlen(my_usr) + 8;
 	dest_file = malloc(sizeof(char) * len);
 
-	if (dest_file == NULL){
-		perror("error at line 1537");
-		exit(EXIT_FAILURE);
-	}
+	if (dest_file == NULL)
+		error(1442);
 
 	read_string(acc_sock, &new_pw, 1548);
 	pw_len = strlen(new_pw);
