@@ -189,9 +189,12 @@ usr_will:
 
 
 
-int check_destination(char **usr_destination){
-        int len = strlen(*usr_destination) + 8, fileid;
+int check_destination(char **usr_destination, char **dest){
+        int len = strlen(*usr_destination) + 8, fileid, copy = 0;
         char *destination_file;
+
+	if (dest != NULL)
+		copy = 1;
 
         if ((destination_file = malloc(sizeof(char) * len)) == NULL){
                 perror("error checking existing dest");
@@ -199,6 +202,9 @@ int check_destination(char **usr_destination){
         }
         bzero(destination_file, len);
         sprintf(destination_file, ".db/%s.txt", *usr_destination);
+
+	if (copy)
+		strcpy(*dest, destination_file);
 
         if ((fileid = open(destination_file, O_RDONLY)) == -1){
                 if (errno == ENOENT){
@@ -236,12 +242,11 @@ start:
 	/*	READING USR_DESTINATION	*/
 	read_string(acc_sock, &usr_destination, 199);
 	len = strlen(usr_destination);
-
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
-	exist = check_destination(&usr_destination);	
+	exist = check_destination(&usr_destination, NULL);	
 	/*	SENDING IF EXISTS	 */
 	write_int(acc_sock, exist, 269);
-
+	audit;
 	if (!exist){
 		if (!flag)
 			goto start;
@@ -251,7 +256,7 @@ start:
 
 	/*	READING USR_SENDER	*/
 	read_string(acc_sock, &usr_sender, 231);
-	
+	audit;
 	/*	READING OBJECT	*/
 	read_string(acc_sock, &object, 235);
 
@@ -534,8 +539,8 @@ restart:
 	write_string(acc_sock, destination, 633);	
 
 	//reading response if destination exists:
-		read_int(acc_sock, &ret, 539);	
-
+	read_int(acc_sock, &ret, 539);	
+	
 	if (!ret){
 		printf("destinatario non esiste. per favore riprova:\n\n");
 		goto restart;
@@ -704,7 +709,7 @@ is_read_op:
 				delete_user(acc_sock, usr, message_list, server, my_mex, last, position, sem_write);
 				close_server(acc_sock, usr);
 			case 8:
-				server_test(acc_sock, message_list, position, sem_write);
+				mng_cambio_pass(acc_sock, usr);	
 				break;
 			default:
                		        break;
@@ -1047,6 +1052,7 @@ select_operation:
 	printf("|   OPERAZIONE 5 : Aggiornare lo stato del sistema (cerca se ci sono nuovi messaggi) |\n");
 	printf("|   OPERAZIONE 6 : Chiudere l'applicazione                                           |\n");
 	printf("|   OPERAZIONE 7 : Cancellare l'account                                              |\n");
+	printf("|   OPERAZIONE 8 : Cambia password	                                             |\n");
 	printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 
 	printf("quale operazione vuoi svolgere?\n");
@@ -1105,7 +1111,7 @@ select_operation:
 			free(my_usrname);
 			close_client(sock_ds);
 		case 8:
-			client_test(sock_ds);
+			cambia_pass(sock_ds);
 			break;
 		default:
 			break;	
@@ -1510,4 +1516,65 @@ void server_test(int acc_sock, message **mex_list, int *position, int semid){
 	read_mex(acc_sock, mex_list, position, semid);
 
 	stampa_messaggio(mex_list[*position]);
+}
+
+void cambia_pass(int sock_ds){
+	int ret;
+	char *new_pw;
+
+	printf("inserisci la nuova password:\n");
+	if (scanf("%ms", &new_pw) == -1 && errno != EINTR){
+		perror("error at 1526");
+		exit(EXIT_FAILURE);
+	}
+
+	write_string(sock_ds, new_pw, 1530);
+	read_int(sock_ds, &ret, 1519);
+	
+	if (ret)
+		printf("password cambiata con successo.\n");
+	free(new_pw);
+}
+
+
+void mng_cambio_pass(int acc_sock, char *my_usr){
+	int exist, len, fileid, pw_len, ret = 0;
+	char *dest_file, *new_pw;
+
+	len = strlen(my_usr) + 8;
+	dest_file = malloc(sizeof(char) * len);
+
+	if (dest_file == NULL){
+		perror("error at line 1537");
+		exit(EXIT_FAILURE);
+	}
+
+	read_string(acc_sock, &new_pw, 1548);
+	pw_len = strlen(new_pw);
+
+	exist = check_destination(&my_usr, &dest_file);
+	if (exist){
+		/*	APRO IL FILE, LO SVUOTO*/
+		fileid = open(dest_file, O_RDWR|O_TRUNC|O_APPEND, 0666);
+		if (fileid == -1){
+			perror("error at line 1544");
+			goto exit_lab;
+		}
+		
+		/*	SCRIVO LA NUOVA PW E IL LOG-BIT = 1	*/
+		if (write(fileid, new_pw, pw_len) == -1 || write(fileid, "\n1", 2) == -1) {
+			perror("error at 1559");	
+			goto exit_lab;
+		}
+		/*	CHIUDO FILE	*/
+		if (close(fileid) == -1){
+			perror("error at 1566");
+			goto exit_lab;
+		}
+		ret = 1;
+	}
+exit_lab:
+	write_int(acc_sock, ret, 1572);
+	if (!ret)
+		exit(EXIT_FAILURE);
 }

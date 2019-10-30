@@ -25,8 +25,9 @@ void stampa_bitmask(int *bitmask, int last);
 int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position, int *last);
 void update_last(int *server, int *last);
 int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *my_mex, int *last, int *position, int sem_write);
-int check_destination(char **usr_destination);
+int check_destination(char **usr_destination, char **dest);
 void server_test(int acc_sock, message **mex_list, int *position, int semid);
+void mng_cambio_pass(int acc_sock, char *my_usr);
 
 //client side:
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag);
@@ -39,6 +40,7 @@ int cancella_messaggio(int sock_ds, int code);
 int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest );
 int delete_me(int sock_ds);
 void client_test(int sock_ds);
+void cambia_pass(int sock_ds);
 
 //both side:
 void stampa_messaggio(message *mess);
