@@ -1,5 +1,5 @@
-#include "helper.h"
-#include "helper-server.h"
+#include "../lib/helper.h"
+#include "../lib/helper-server.h"
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
@@ -757,3 +757,55 @@ void log_out(char *usr){
         free(file_name);
 }
 
+
+
+
+
+void read_mex(int sock, message **mex_list, int *position, int semid){
+	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4, i;
+	char *one_string, *token;
+	struct sembuf sops;
+
+	one_string = malloc(sizeof(char) * max_len);
+	bzero(one_string, max_len);
+	sops.sem_num = 0;
+	sops.sem_flg = 0;
+	sops.sem_op = -1;
+
+	read_string(sock, &one_string, 1445);
+	//	TRY TO GET CONTROL	
+	if (semop(semid, &sops, 1) == -1)
+		error(1356);
+	
+	message *mex = mex_list[*position];
+
+	//	PARSING THE STRING		
+	//sender, destination, object, mex	
+
+	token = strtok(one_string, "\033");
+	strcpy(mex -> usr_sender, token);
+
+	for (i = 0; i < 3; i++){
+		token = strtok(NULL, "\033");			
+		switch (i){
+			case 0:
+				strcpy(mex -> usr_destination, token);
+				break;
+			case 1:
+				strcpy(mex -> object, token);
+				break;
+			case 2:
+				strcpy(mex -> text, token);
+				break;
+		}
+	}
+
+
+	//	GIVE CONTROL TO OTHERS	
+
+	sops.sem_op = 1;
+	if (semop(semid, &sops, 1) == -1)
+		error(1386);
+
+	free(one_string);
+}

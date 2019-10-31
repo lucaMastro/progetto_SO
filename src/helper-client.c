@@ -1,5 +1,5 @@
-#include "helper.h"
-#include "helper-client.h"
+#include "../lib/helper.h"
+#include "../lib/helper-client.h"
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
@@ -21,16 +21,25 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
         char *sender, *object, *text;
         message *mex;
         if ((mex = malloc(sizeof(mex))) == NULL)
-                error(83);
+                error(24);
 
         if ((mex -> usr_destination = malloc(sizeof(char) *MAX_USR_LEN)) == NULL)
-                error(86);
+                error(27);
 
-        mex -> usr_sender = malloc(sizeof(char) *MAX_USR_LEN);
-        mex -> object = malloc(sizeof(char) *MAX_OBJ_LEN);
-        mex -> text = malloc(sizeof(char) *MAX_MESS_LEN);
-        mex -> is_new = malloc(sizeof(int));
-        mex -> position = malloc(sizeof(int));
+        if ((mex -> usr_sender = malloc(sizeof(char) *MAX_USR_LEN)) == NULL)
+		error(30);
+	
+        if ((mex -> object = malloc(sizeof(char) *MAX_OBJ_LEN)) == NULL)
+		error(33);
+
+        if ((mex -> text = malloc(sizeof(char) *MAX_MESS_LEN)) == NULL)
+		error(36);
+
+        if ((mex -> is_new = malloc(sizeof(int))) == NULL)
+		error(39);
+
+        if ((mex -> position = malloc(sizeof(int))) == NULL)
+		error(42);
 
 start:
         read_int(sock_ds, &found, 95);
@@ -459,9 +468,12 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                 printf("dammi il codice del messaggio da eliminare.\nNOTA: se non hai messaggi associati al codice inserito, l'operazione verrà interrotta.\n(inserire un numero negativo per annullare)\n");
                 if (scanf("%d", &code) == -1 && errno != EINTR)
                         error(308);
-
                 fflush(stdin);
 
+		if (code > MAX_NUM_MEX){
+			printf("codice non valido. riprova.\n");
+			goto another_code;
+		}
                 /*SCRIVO CODE*/
                 write_int(sock_ds, code, 328);
                 if (code < 0){
@@ -610,6 +622,18 @@ void cambia_pass(int sock_ds){
         if (ret)
                 printf("password cambiata con successo.\n");
         free(new_pw);
+}
+
+void write_mex(int sock, message *mex){
+	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4;
+	char one_string[max_len];
+
+	bzero(one_string, max_len);
+
+	//	sender, destination, object, mex	
+	sprintf(one_string, "%s\033%s\033%s\033%s\033", mex -> usr_sender, mex -> usr_destination, mex -> object, mex -> text);
+	
+	write_string(sock, one_string, 1433);
 }
 
 

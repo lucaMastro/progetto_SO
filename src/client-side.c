@@ -3,8 +3,8 @@
 #include <arpa/inet.h>        /*  inet (3) funtions         */
 #include <unistd.h>           /*  misc. UNIX functions      */
 
-#include "helper.h"           /*  our own helper functions  */
-#include "helper-client.h"
+#include "../lib/helper.h"           /*  our own helper functions  */
+#include "../lib/helper-client.h"
 
 #include <stdlib.h>
 #include <stdio.h>

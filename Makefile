@@ -1,31 +1,40 @@
 SERVER	= server
 CLIENT	= client
 
-SSRC	= server-side.c
-CSRC	= client-side.c
+SSRC	= src/server-side.c
+CSRC	= src/client-side.c
+
+H 	= src/helper
+HS 	= src/helper-server
+HC	= src/helper-client
+
+HSRC	= src/helper.c
+HSSRC	= src/helper-server.c
+HCSRC	= src/helper-client.c
 
 all: $(CLIENT) $(SERVER)
 
-$(SERVER): helper.o helper-server.o $(SERVER).o 
-	gcc -o $(SERVER) helper.o helper-server.o $(SERVER).o 
+$(SERVER): $(H).o $(HS).o $(SERVER).o 
+	gcc -o $(SERVER) $(H).o $(HS).o src/$(SERVER).o 
 
-$(SERVER).o: helper.h helper-server.h
-	gcc -o $(SERVER).o $(SSRC) -c
+$(SERVER).o: 
+	gcc -o src/$(SERVER).o $(SSRC) -c
 
-$(CLIENT): helper.o helper-client.o $(CLIENT).o 
-	gcc -o $(CLIENT) helper.o helper-client.o $(CLIENT).o 
+$(CLIENT): $(H).o $(HC).o $(CLIENT).o 
+	gcc -o $(CLIENT) $(H).o $(HC).o src/$(CLIENT).o 
 
-$(CLIENT).o: helper.h helper-client.h 
-	gcc -o $(CLIENT).o $(CSRC) -c
+$(CLIENT).o:  
+	gcc -o src/$(CLIENT).o $(CSRC) -c
 
 helper.o:
-	gcc -o helper.o helper.c -c
-helper-server.o:
-	gcc -o helper-server.o helper-server.c -c 
-helper-client.o:
-	gcc -o helper-client.o helper-client.c -c 
+	gcc -o $(H).o $(H).c -c
 
+helper-server.o:
+	gcc -o $(HS).o $(HSSRC) -c
+
+helper-client.o:
+	gcc -o $(HC).o $(HCSRC) -c 	
 clean:
-	rm -f *.o
+	rm -f src/*.o
 	rm -f $(CLIENT)
 	rm -f $(SERVER)

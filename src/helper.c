@@ -1,4 +1,4 @@
-#include "helper.h"
+#include "../lib/helper.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,65 +70,3 @@ void read_int(int sock, int *num, int line){
 }
 
 
-/*
-void write_mex(int sock, message *mex){
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4;
-	char one_string[max_len];
-
-	bzero(one_string, max_len);
-
-	//	sender, destination, object, mex	
-	sprintf(one_string, "%s\n%s\n%s\n%s\n", mex -> usr_sender, mex -> usr_destination, mex -> object, mex -> text);
-	
-	write_string(sock, one_string, 1433);
-}*/
-
-/*
-void read_mex(int sock, message **mex_list, int *position, int semid){
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4, i;
-	char *one_string, *token;
-	struct sembuf sops;
-
-	one_string = malloc(sizeof(char) * max_len);
-	bzero(one_string, max_len);
-	sops.sem_num = 0;
-	sops.sem_flg = 0;
-	sops.sem_op = -1;
-
-	read_string(sock, &one_string, 1445);
-	//	TRY TO GET CONTROL	
-	if (semop(semid, &sops, 1) == -1)
-		error(1356);
-	
-	message *mex = mex_list[*position];
-
-	//	PARSING THE STRING		
-	//sender, destination, object, mex	
-
-	token = strtok(one_string, "\n");
-	strcpy(mex -> usr_sender, token);
-
-	for (i = 0; i < 3; i++){
-		token = strtok(NULL, "\n");			
-		switch (i){
-			case 0:
-				strcpy(mex -> usr_destination, token);
-				break;
-			case 1:
-				strcpy(mex -> object, token);
-				break;
-			case 2:
-				strcpy(mex -> text, token);
-				break;
-		}
-	}
-
-
-	//	GIVE CONTROL TO OTHERS	
-
-	sops.sem_op = 1;
-	if (semop(semid, &sops, 1) == -1)
-		error(1386);
-
-	free(one_string);
-}*/
