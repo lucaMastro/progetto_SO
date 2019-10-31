@@ -6,20 +6,25 @@ CSRC	= client-side.c
 
 all: $(CLIENT) $(SERVER)
 
-$(SERVER): $(SERVER).o helper.o
-	gcc -o $(SERVER) $(SERVER).o helper.o
+$(SERVER): helper.o helper-server.o $(SERVER).o 
+	gcc -o $(SERVER) helper.o helper-server.o $(SERVER).o 
 
-$(SERVER).o: $(SSRC) helper.h
+$(SERVER).o: helper.h helper-server.h
 	gcc -o $(SERVER).o $(SSRC) -c
 
-$(CLIENT): $(CLIENT).o helper.o
-	gcc -o $(CLIENT) $(CLIENT).o helper.o
+$(CLIENT): helper.o helper-client.o $(CLIENT).o 
+	gcc -o $(CLIENT) helper.o helper-client.o $(CLIENT).o 
 
-$(CLIENT).o: $(CSRC) helper.h
+$(CLIENT).o: helper.h helper-client.h 
 	gcc -o $(CLIENT).o $(CSRC) -c
 
-helper.o: helper.c helper.h
+helper.o:
 	gcc -o helper.o helper.c -c
+helper-server.o:
+	gcc -o helper-server.o helper-server.c -c 
+helper-client.o:
+	gcc -o helper-client.o helper-client.c -c 
+
 clean:
 	rm -f *.o
 	rm -f $(CLIENT)
