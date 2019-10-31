@@ -70,3 +70,49 @@ void read_int(int sock, int *num, int line){
 }
 
 
+void get_mex(int sock, message **mex){ //store the sent mex in *mex
+	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4, i;
+	char *one_string, *token;
+
+	one_string = malloc(sizeof(char) * max_len);
+	if (one_string == NULL)
+		error(768);
+	bzero(one_string, max_len);
+
+	read_string(sock, &one_string, 1445);
+	
+
+	//	PARSING THE STRING		
+	//sender, destination, object, mex	
+
+	token = strtok(one_string, "\033");
+	strcpy((*mex) -> usr_sender, token);
+
+	for (i = 0; i < 3; i++){
+		token = strtok(NULL, "\033");			
+		switch (i){
+			case 0:
+				strcpy((*mex) -> usr_destination, token);
+				break;
+			case 1:
+				strcpy((*mex) -> object, token);
+				break;
+			case 2:
+				strcpy((*mex) -> text, token);
+				break;
+		}
+	}
+	free(one_string);
+}
+
+void send_mex(int sock, message *mex){
+	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4;
+	char one_string[max_len];
+
+	bzero(one_string, max_len);
+
+	//	sender, destination, object, mex	
+	sprintf(one_string, "%s\033%s\033%s\033%s\033", mex -> usr_sender, mex -> usr_destination, mex -> object, mex -> text);
+	
+	write_string(sock, one_string, 1433);
+}

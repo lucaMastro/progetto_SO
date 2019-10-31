@@ -12,7 +12,7 @@ HSRC	= src/helper.c
 HSSRC	= src/helper-server.c
 HCSRC	= src/helper-client.c
 
-all: $(CLIENT) $(SERVER)
+all: clean $(CLIENT) $(SERVER)
 
 $(SERVER): $(H).o $(HS).o $(SERVER).o 
 	gcc -o $(SERVER) $(H).o $(HS).o src/$(SERVER).o 

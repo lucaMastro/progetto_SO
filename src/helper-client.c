@@ -17,7 +17,7 @@
 #define audit printf("ok\n")
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
-        int found, again = 1, isnew, len_send, len_obj, len_text, pos, isfirst = 1, wb;
+        int found, again = 1, isnew, len_send, len_obj, len_text, pos, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0; 
         char *sender, *object, *text;
         message *mex;
         if ((mex = malloc(sizeof(mex))) == NULL)
@@ -42,9 +42,15 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
 		error(42);
 
 start:
-        read_int(sock_ds, &found, 95);
+        
+	read_int(sock_ds, &found, 95);
+
+	if (found) //im gonna start the while
+		isfirst = 0;
+
         while(found && again){
-                isfirst = 0;
+		if (leave)
+			break;
 
                 /*READING IS_NEW*/
                 read_int(sock_ds, &isnew, 101);
@@ -67,62 +73,96 @@ start:
                 *(mex -> position) = pos;
 
                 /*PRINTING MESSAGE*/
+        	printf("\e[1;1H\e[2J");
+
+	        printf("......................................................................................\n");
+        	printf("......................................................................................\n");
+	        printf("................__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __..............\n");
+        	printf("...............|                                                        |.............\n");
+	        printf("...............|              GESTORE LETTURE DEI MESSAGGI              |.............\n");
+        	printf("...............|__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __|.............\n");
+	        printf("......................................................................................\n");
+        	printf("......................................................................................\n");
+		printf("..............................Il messaggio ricevuto è:................................\n");
                 stampa_messaggio(mex);
+	        printf("......................................................................................\n");	
+        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+	        printf("|                                                                                    |\n");
 
-                /*CHECKING IF USR WANT TO WRITE BACK TO LAST READ MESS: only if
-                 *                                                               strlen("RE: <object>") <= MAX_OBJ_LEN          */
-                if (strlen(object) <= MAX_OBJ_LEN - 4){
-                        printf("vuoi rispondere al messaggio? (1 = si, qualsiasi altro tasto = no)\n");
+                /*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
 
-                        if (scanf("%d", &wb) == -1 && errno != EINTR)
-                                error(128);
-                        fflush(stdin);
-                        write_int(sock_ds, wb, 154);
-                        if (wb == 1)
-                                write_back(sock_ds, object, my_usrname, sender);
-                }
+                if (strlen(object) <= MAX_OBJ_LEN - 4)
+	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
+		else{
+	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
+			can_i_wb = 0;
+			minimal_code = 1;
+		}
+
+        	printf("|   OPERAZIONE 1 : Cancellare il messaggio visualizzato				     |\n");
+	        printf("|   OPERAZIONE 2 : Cercare un altro messaggio					     |\n");
+        	printf("|   OPERAZIONE 3 : Interrompere la ricerca e tornare al menu principale		     |\n");
+	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+		printf("\nQuale operazione vuoi svolgere?\n");
 
 usr_will:
                 /*CHECKING USR'S WILL*/
-                printf("cercare un altro messaggio? (1 = si, 0 = no)\npuoi anche inserire un numero negativo per cancellare l'ultimo messaggio letto.\n");
 
-                if (scanf("%d", &again) == -1 && errno != EINTR)
+                if (scanf("%d", &op) == -1 && errno != EINTR)
                         error(140);
-
                 fflush(stdin);
 
-                if (again > 1){
-                        printf("valore non accettabile. riprova.\n\n");
-                        goto usr_will;
-                }
-                //send user' will
-                write_int(sock_ds, again, 183);
+		if (op < minimal_code || op > 3){
+			printf("codice non valido. riprovare\n");
+			goto usr_will;
+		}
 
-                if (again < 0){
-                        //must eliminate mess:
-                        cancella_messaggio(sock_ds, pos);
-                        goto usr_will;
-                }
+		/*SENDING USR'S WILL*/
+		write_int(sock_ds, op, 116);
 
-                else if (again == 1) // || again == 0){
-                        //updating found
-                        read_int(sock_ds, &found, 156);
-        }
-
-        if (isfirst && !flag)
-                printf("non ci sono messaggi per te\n");
-        else if (isfirst && flag)
-                printf("non ci sono nuovi messaggi per te\n");
-        else{//sono entrato nel while
-                if (flag){//solo messaggi new
-                        if (again)
-                                printf("non ci sono altri nuovi mess.\n");
+		switch (op){
+			case 0:
+				if (can_i_wb)				
+                                	write_back(sock_ds, object, my_usrname, sender);
+/*				else{//non dovrebbe essere necessario
+					printf("operazione non disponibile. riprovare\n");
+					goto usr_will;
+				}*/
+				printf("premi un tasto per continuare la ricerca: ");
+				fflush(stdin);
+				break;
+			case 1:	
+	                        cancella_messaggio(sock_ds, pos);
+				printf("premi un tasto per continuare la ricerca: ");
+				fflush(stdin);
+				break;
+			case 2:
+				break;
+			case 3:
+				leave = 1;
+				break;
                 }
-                else{
-                        if (again)
-                                printf("non ci sono altri messaggi\n");
-                }
-        }
+		
+		if (!leave) //updating found
+			read_int(sock_ds, &found, 156);
+	}
+	
+        if (!leave){
+		if (isfirst && !flag)
+        	        printf("non ci sono messaggi per te\n");
+	        else if (isfirst && flag)
+        	        printf("non ci sono nuovi messaggi per te\n");
+	        else{//sono entrato nel while
+        	        if (flag){//solo messaggi new
+                	        if (again)
+                        	        printf("non ci sono altri nuovi mess.\n");
+	                }
+        	        else{
+                	        if (again)
+                        	        printf("non ci sono altri messaggi\n");
+	                }
+        	}
+	}
         free(mex);
         return 0;
 
@@ -532,7 +572,8 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         char *text, *re_obj;
         int len = strlen(object), ret;
 
-        //invio destinatario
+
+	//invio destinatario
         write_string(sock_ds, usr_dest, 1296);
 
         //reading response if destination exists:
@@ -568,15 +609,14 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
         //invio text
         write_string(sock_ds, text, 1332);
-
+	
+	free(text);
         return 1;
 }
 
 int delete_me(int sock_ds){//, char *usr){
         /*client-side version of elimination*/
         int ok;
-
-//      write_string(sock_ds, usr, 1343);
 
         read_int(sock_ds, &ok, 1347);
         if (ok == 1)
@@ -588,26 +628,6 @@ int delete_me(int sock_ds){//, char *usr){
 
 }
 
-/*
-void client_test(int sock_ds){
-        message *mex = malloc(sizeof(message*));
-        mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN);
-        mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN);
-        mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN);
-        mex -> text = malloc(sizeof(char) * MAX_MESS_LEN);
-
-        sprintf(mex -> usr_destination, "%s", "a");
-        sprintf(mex -> usr_sender, "%s", "b");
-        sprintf(mex -> object, "%s", "c");
-        sprintf(mex -> text, "%s", "d");
-
-//      printf("mex %p\n", mex);
-
-//      stampa_messaggio(mex);
-        write_mex(sock_ds, mex);
-        free(mex);
-}*/
-
 void cambia_pass(int sock_ds){
         int ret;
         char *new_pw;
@@ -615,6 +635,7 @@ void cambia_pass(int sock_ds){
         printf("inserisci la nuova password:\n");
         if (scanf("%ms", &new_pw) == -1 && errno != EINTR)
                 error(1423);
+	fflush(stdin);
 
         write_string(sock_ds, new_pw, 1530);
         read_int(sock_ds, &ret, 1519);
@@ -624,16 +645,5 @@ void cambia_pass(int sock_ds){
         free(new_pw);
 }
 
-void write_mex(int sock, message *mex){
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4;
-	char one_string[max_len];
-
-	bzero(one_string, max_len);
-
-	//	sender, destination, object, mex	
-	sprintf(one_string, "%s\033%s\033%s\033%s\033", mex -> usr_sender, mex -> usr_destination, mex -> object, mex -> text);
-	
-	write_string(sock, one_string, 1433);
-}
 
 

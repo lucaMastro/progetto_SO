@@ -77,6 +77,7 @@ start:
 	/*	READING USR_DESTINATION	*/
 	read_string(acc_sock, &usr_destination, 199);
 	len = strlen(usr_destination);
+	printf("usr dest = %s, len = %d\n", usr_destination, len);
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
 	exist = check_destination(&usr_destination, NULL);	
 	/*	SENDING IF EXISTS	 */
@@ -135,23 +136,24 @@ start:
 
 int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int flag, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position){
         //server side
-        int i = 0, found = 0, isnew, len_send, len_obj, len_text, pos, again, ret = 0, temp_last = *last, wb;
+        int i, found = 0, isnew, len_send, len_obj, len_text, pos, again, ret = 0, temp_last = *last, op, leave = 0;
         message *mex;
         char *sender, *obj, *text;
 
         for (i = 0; i < temp_last; i++){
-                mex = mess_list[i];
+		if (leave)
+			break;
 
-                stampa_messaggio(mex);
+                mex = mess_list[i];
+    //          stampa_messaggio(mex);
                 if (my_mex[i] == 1){
-                        found = 1;
 
                         //parsing dei campi del messaggio:
                         isnew = my_new_mex[i];
-                        if (isnew == 0 && flag){//messaggio letto, e voglio solo i nuovi
-                                found = 0;
+                        if (isnew == 0 && flag)//messaggio letto, e voglio solo i nuovi
                                 continue;
-                        }
+                        
+                        found = 1;
 
                         /*WRITING FOUND*/
                         write_int(acc_sock, found, 710);
@@ -173,25 +175,36 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 
                         *(mex -> is_new) = 0;
                         found = 0;
-                        /*READING IF WRITE BACK*/
-                        read_int(acc_sock, &wb, 613);
-                        if (wb == 1)
-                                ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
 
+			/*READING USR_WILL*/
 read_usr_will:
-                        /*READING USR'S WILL*/
-                        read_int(acc_sock, &again, 647);
+                        read_int(acc_sock, &op, 613);
+                        
+			switch(op){
+				case 0:
+			
+					ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
+					break;
 
-                        if (again < 0){
-                                ret = gestore_eliminazioni(acc_sock, usr, mess_list, my_mex, my_new_mex, server, sem_write, position, last);
-                                goto read_usr_will;
-                        }
-                        else if (again == 0)
-                                break;
-                }
+				case 1:
+	                                ret = gestore_eliminazioni(acc_sock, usr, mess_list, my_mex, my_new_mex, server, sem_write, position, last);
+        	                        //goto read_usr_will;
+					break;
+				
+				case 2:
+					break;
+				
+				case 3:
+					leave = 1;
+					break;
+			}
+		}
         }
-        if (i == temp_last)
+        if (i == temp_last && leave == 0){
+	//	printf("i = %d\ntl = %d\n", i, temp_last);
                 write_int(acc_sock, found, 615);
+	//	printf("wrote\n");
+	}
 
         return ret;
 }
@@ -479,11 +492,6 @@ void stampa_bitmask(int *bitmask, int last){
         printf("\n");
 }
 
-
-
-
-
-
 int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position, int *last){
         int code, is_mine, compl, again, mode, ret = 0;
         struct sembuf sops;
@@ -646,7 +654,7 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 int check_destination(char **usr_destination, char **dest){
         int len = strlen(*usr_destination) + 8, fileid, copy = 0;
         char *destination_file;
-
+	
         if (dest != NULL)
                 copy = 1;
 
@@ -655,7 +663,6 @@ int check_destination(char **usr_destination, char **dest){
 
         bzero(destination_file, len);
         sprintf(destination_file, ".db/%s.txt", *usr_destination);
-
         if (copy)
                 strcpy(*dest, destination_file);
 
@@ -672,7 +679,6 @@ int check_destination(char **usr_destination, char **dest){
                 error(209);
 
         free(destination_file);
-
         return 1;
 }
 
@@ -761,51 +767,27 @@ void log_out(char *usr){
 
 
 
-void read_mex(int sock, message **mex_list, int *position, int semid){
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 4, i;
-	char *one_string, *token;
+void store_mex(int sock, message **mex_list, int *position, int semid){ 
+	/*store the mex in the correct position of the server's struct	*/
+
 	struct sembuf sops;
 
-	one_string = malloc(sizeof(char) * max_len);
-	bzero(one_string, max_len);
 	sops.sem_num = 0;
 	sops.sem_flg = 0;
 	sops.sem_op = -1;
 
-	read_string(sock, &one_string, 1445);
 	//	TRY TO GET CONTROL	
 	if (semop(semid, &sops, 1) == -1)
 		error(1356);
 	
 	message *mex = mex_list[*position];
 
-	//	PARSING THE STRING		
-	//sender, destination, object, mex	
-
-	token = strtok(one_string, "\033");
-	strcpy(mex -> usr_sender, token);
-
-	for (i = 0; i < 3; i++){
-		token = strtok(NULL, "\033");			
-		switch (i){
-			case 0:
-				strcpy(mex -> usr_destination, token);
-				break;
-			case 1:
-				strcpy(mex -> object, token);
-				break;
-			case 2:
-				strcpy(mex -> text, token);
-				break;
-		}
-	}
-
+	/*	STORING MEX IN THE CORRECT POSITION OF MEX_LIST	*/
+	get_mex(sock, &mex);
 
 	//	GIVE CONTROL TO OTHERS	
 
 	sops.sem_op = 1;
 	if (semop(semid, &sops, 1) == -1)
 		error(1386);
-
-	free(one_string);
 }
