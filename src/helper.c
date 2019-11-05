@@ -81,52 +81,41 @@ void read_int(int sock, int *num, int line){
 }
 
 
-int get_mex(int sock, message **mex){ //store the sent mex in *mex
+int get_mex(int sock, message *mex){ //store the sent mex in mex
 	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6, i = 0, isnew;
 	char *one_string, *token;
 
-	one_string = malloc(sizeof(char) * max_len);
-	if (one_string == NULL)
-		error(768);
-	bzero(one_string, max_len);
+	read_string(sock, &one_string, 88);
 
-	read_string(sock, &one_string, 1445);
-
-	//	PARSING THE STRING		
-	//is_new, sender, destination, object, mex	
-
+	/*PARSING*/
+		//isnew
 	token = strtok(one_string, "\037");
-	*((*mex) -> is_new) = atoi(token);
 	isnew = atoi(token);
-	//printf("is_new = %d, isnew = %d\n", *((*mex) -> is_new), isnew);
-//	for (i = 0; i < 5; i++){
-	while ((token = strtok(NULL, "\037")) != NULL){			
-		printf("%d. %p\n",i, ((*mex) -> is_new));
-		printf("%s, len = %d\n\n", token, strlen(token));
-		switch (i){
+	*(mex -> is_new) = isnew;
+	printf("00. %p\n%p\n\n", mex -> is_new, token);
+	while ((token = strtok(NULL, "\037")) != NULL){
+		printf("%d. %p\n", i, mex -> is_new);
+		switch(i){
 			case 0:
-				strcpy(((*mex) -> usr_sender), token);
+				strcpy(mex -> usr_sender, token);
 				break;
 			case 1:
-				strcpy(((*mex) -> usr_destination), token);
+				strcpy(mex -> usr_destination, token);
 				break;
 			case 2:
-				strcpy(((*mex) -> object), token);
+				strcpy(mex -> object, token);
 				break;
 			case 3:
-				strcpy(((*mex) -> text), token);
+				strcpy(mex -> text, token);
 				break;
 			case 4:
-				*((*mex) -> position) = atoi(token);
+				*(mex -> position) = atoi(token);
+				break;
+			default:
 				break;
 		}
 		i++;
 	}
-	free(one_string);
-	printf("%p\n", ((*mex) -> is_new));
-//	printf("%d\n", *((*mex) -> is_new));
-	printf("%d\n", *((*mex) -> position));
-	//stampa_messaggio(*mex);
 	return isnew;
 }
 

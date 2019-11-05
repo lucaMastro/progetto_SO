@@ -77,7 +77,9 @@ start:
 	/*	READING USR_DESTINATION	*/
 	read_string(acc_sock, &usr_destination, 199);
 	len = strlen(usr_destination);
-	printf("usr dest = %s, len = %d\n", usr_destination, len);
+
+//	printf("usr dest = %s, len = %d\n", usr_destination, len);
+
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
 	exist = check_destination(&usr_destination, NULL);	
 	/*	SENDING IF EXISTS	 */
@@ -103,10 +105,14 @@ start:
 
 	message *mex = mess_list[*position];
 
-	sprintf((mex -> usr_destination), "%s", usr_destination);
+	/*sprintf((mex -> usr_destination), "%s", usr_destination);
 	sprintf((mex ->usr_sender), "%s", usr_sender);
 	sprintf((mex -> object), "%s", object);
-	sprintf((mex -> text), "%s", text);
+	sprintf((mex -> text), "%s", text);*/
+	strcpy((mex -> usr_destination), usr_destination);
+	strcpy((mex ->usr_sender), usr_sender);
+	strcpy((mex -> object), object);
+	strcpy((mex -> text), text);
 	*(mex -> is_new) = 1;
 	
 	server[*position] = 1;
@@ -125,8 +131,8 @@ start:
         sops.sem_op = 1;
         if (semop(sem_write, &sops, 1) == -1)
                 error(290);
-
-        return 0;
+//	stampa_messaggio(mex);
+	return 0;
 }
 
 
@@ -240,7 +246,7 @@ is_read_op:
 
                                 ret = update_system_state(my_mex, my_new_mex, message_list, usr, *last, server);
                                 //sending if updated:
-                                write_int(acc_sock, ret, sizeof(ret));
+                                write_int(acc_sock, ret, 249);
                                 break;
                         case 2:
                                 flag = 1;
@@ -253,7 +259,8 @@ is_read_op:
                                         printf("messaggio ricevuto con successo\n");
                                 else
                                         printf("errore ricezione\n");
-
+				
+				//sending if it was ok
                                 write_int(acc_sock, ret, sizeof(ret));
 
 /*                              printf("il messaggio inserito è:\n\n");
@@ -785,7 +792,7 @@ void store_mex(int sock, message **mex_list, int *position, int semid){
 	message *mex = mex_list[*position];
 
 	/*	STORING MEX IN THE CORRECT POSITION OF MEX_LIST	*/
-	get_mex(sock, &mex);
+	get_mex(sock, mex);
 
 	//	GIVE CONTROL TO OTHERS	
 

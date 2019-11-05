@@ -19,7 +19,7 @@
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
-        int found, again = 1, isnew, len_send, len_obj, len_text, pos, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0; 
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0; 
  //       char *sender, *object, *text;
         message *mex;
         if ((mex = malloc(sizeof(mex))) == NULL)
@@ -52,7 +52,7 @@ start:
         while(found && again){
 		if (leave)
 			break;
-                isnew = get_mex(sock_ds, &mex);
+                isnew = get_mex(sock_ds, mex);
 		printf("hel-client: isnew = %d\n", *(mex -> is_new));
 		/*CHECKING IS_NEW*/
                 if (!isnew && flag)
@@ -224,18 +224,12 @@ restart:
 
         printf("\n\ninvio del messaggio avvenuto con successo. attendo conferma ricezione...\n");
 
-        read_int(acc_sock, &ret, 567);
-
-        if (ret < 0)
-                printf("ricezione fallita. riprovare.\n\n\n");
-        else
-                printf("messaggio ricevuto correttamente\n\n\n");
 
 }
 
 int usr_menu(int sock_ds, char *my_usrname){
 
-        int operation, new_mex_avaiable, check_upd = 1, code = -1;
+        int operation, new_mex_avaiable, check_upd = 1, code = -1, ret;
 
 select_operation:
 
@@ -310,6 +304,12 @@ select_operation:
 
                 case 3:
                         invia_messaggio(sock_ds, my_usrname);
+        		read_int(sock_ds, &ret, 567);
+			//reading if it was ok
+		        if (ret < 0)	
+                		printf("ricezione fallita. riprovare.\n\n\n");
+		        else
+                		printf("messaggio ricevuto correttamente\n\n\n");
                         break;
                 case 4:
                         cancella_messaggio(sock_ds, code);
