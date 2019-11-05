@@ -16,23 +16,25 @@
 #define fflush(stdin) while(getchar() != '\n')
 #define audit printf("ok\n")
 
+
+
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
         int found, again = 1, isnew, len_send, len_obj, len_text, pos, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0; 
-        char *sender, *object, *text;
+ //       char *sender, *object, *text;
         message *mex;
         if ((mex = malloc(sizeof(mex))) == NULL)
                 error(24);
 
-        if ((mex -> usr_destination = malloc(sizeof(char) *MAX_USR_LEN)) == NULL)
+        if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
                 error(27);
 
-        if ((mex -> usr_sender = malloc(sizeof(char) *MAX_USR_LEN)) == NULL)
+        if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
 		error(30);
 	
-        if ((mex -> object = malloc(sizeof(char) *MAX_OBJ_LEN)) == NULL)
+        if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
 		error(33);
 
-        if ((mex -> text = malloc(sizeof(char) *MAX_MESS_LEN)) == NULL)
+        if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
 		error(36);
 
         if ((mex -> is_new = malloc(sizeof(int))) == NULL)
@@ -40,7 +42,6 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
 
         if ((mex -> position = malloc(sizeof(int))) == NULL)
 		error(42);
-
 start:
         
 	read_int(sock_ds, &found, 95);
@@ -51,26 +52,12 @@ start:
         while(found && again){
 		if (leave)
 			break;
-
-                /*READING IS_NEW*/
-                read_int(sock_ds, &isnew, 101);
+                isnew = get_mex(sock_ds, &mex);
+		printf("hel-client: isnew = %d\n", *(mex -> is_new));
+		/*CHECKING IS_NEW*/
                 if (!isnew && flag)
                         goto start;
 
-                /*READING SENDER*/
-                read_string(sock_ds, &sender, 108);
-                /*READING OBJECT*/
-                read_string(sock_ds, &object, 112);
-                /*READING TEXT*/
-                read_string(sock_ds, &text, 116);
-                /*READING POSITION*/
-                read_int(sock_ds, &pos, 119);
-                mex -> usr_sender = sender;
-                mex -> object = object;
-                mex -> text = text;
-                mex -> usr_destination = my_usrname;
-                *(mex -> is_new) = isnew;
-                *(mex -> position) = pos;
 
                 /*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
@@ -84,6 +71,7 @@ start:
 	        printf("......................................................................................\n");
         	printf("......................................................................................\n");
 		printf("..............................Il messaggio ricevuto è:................................\n");
+		printf("%p, len = %d\n", mex, strlen( mex -> object));
                 stampa_messaggio(mex);
 	        printf("......................................................................................\n");	
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
@@ -91,7 +79,7 @@ start:
 
                 /*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
 
-                if (strlen(object) <= MAX_OBJ_LEN - 4)
+                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4)
 	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
 		else{
 	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
@@ -123,7 +111,7 @@ usr_will:
 		switch (op){
 			case 0:
 				if (can_i_wb)				
-                                	write_back(sock_ds, object, my_usrname, sender);
+                                	write_back(sock_ds, mex -> object, my_usrname, mex -> usr_sender);
 /*				else{//non dovrebbe essere necessario
 					printf("operazione non disponibile. riprovare\n");
 					goto usr_will;
@@ -132,7 +120,7 @@ usr_will:
 				fflush(stdin);
 				break;
 			case 1:	
-	                        cancella_messaggio(sock_ds, pos);
+	                        cancella_messaggio(sock_ds, *(mex -> position));
 				printf("premi un tasto per continuare la ricerca: ");
 				fflush(stdin);
 				break;
@@ -204,7 +192,6 @@ restart:
         printf("inserisci il testo del messaggio: (max %d caratteri):\n", MAX_MESS_LEN);
         if (scanf("%m[^\n]", &mes) == -1 && errno != EINTR)
                 error(497);
-
         fflush(stdin);
 
         len_mess = strlen(mes);
@@ -388,7 +375,8 @@ portal:
         fflush(stdin);
 
         if (operation < 0 || operation > 2){
-                printf("operazione non valida. riprova:\n\n");
+                printf("operazione non valida. premi un tasto per riprovare: ");
+		fflush(stdin);
                 goto portal;
                 exit(EXIT_FAILURE);
         }
@@ -521,10 +509,10 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                         goto exit_lab;
                 }
         }
-
-        /*READ IF THE CODE IS ACCEPTED*/
+	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
 
+        printf("%d\n", is_mine);
         if (is_mine == 1){
                 printf("codice accettato. attendi conferma eliminazione\n");
 

@@ -82,7 +82,6 @@ start:
 	exist = check_destination(&usr_destination, NULL);	
 	/*	SENDING IF EXISTS	 */
 	write_int(acc_sock, exist, 269);
-	audit;
 	if (!exist){
 		if (!flag)
 			goto start;
@@ -92,7 +91,6 @@ start:
 
 	/*	READING USR_SENDER	*/
 	read_string(acc_sock, &usr_sender, 231);
-	audit;
 	/*	READING OBJECT	*/
 	read_string(acc_sock, &object, 235);
 
@@ -138,7 +136,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
         //server side
         int i, found = 0, isnew, len_send, len_obj, len_text, pos, again, ret = 0, temp_last = *last, op, leave = 0;
         message *mex;
-        char *sender, *obj, *text;
+//      char *sender, *obj, *text;
 
         for (i = 0; i < temp_last; i++){
 		if (leave)
@@ -158,20 +156,8 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         /*WRITING FOUND*/
                         write_int(acc_sock, found, 710);
 
-                        /*WRITING IS_NEW*/
-                        write_int(acc_sock, *(mex -> is_new), 714);
-
-                        /*WRITING SENDER*/
-                        write_string(acc_sock, mex -> usr_sender, 718);
-
-                        /*WRITING OBJECT*/
-                        write_string(acc_sock, mex -> object, 723);
-
-                        /*WRITING TEXT*/
-                        write_string(acc_sock, mex -> text, 727);
-
-                        /*WRITING POSITION*/
-                        write_int(acc_sock, i, 731); //*(mex -> position), 731);
+			/*	SENDING MEX	*/
+			send_mex(acc_sock, mex);
 
                         *(mex -> is_new) = 0;
                         found = 0;
@@ -306,6 +292,7 @@ void managing_usr_registration_login(int acc_sock, char **usr){
         int fileid;
 
 check_operation:
+	bzero(stored_pw, MAX_PW_LEN + 1);
         ret = 0;
         printf("waiting for an operation:\n");
         read_int(acc_sock, &operation, 931);
@@ -318,6 +305,11 @@ check_operation:
                 exit(EXIT_SUCCESS);
         }
         else{
+
+	/*	pw = malloc(sizeof(char) * MAX_PW_LEN);
+		if (pw == NULL)
+			error(694);
+		bzero(pw, MAX_PW_LEN);*/
 
                 /*      READING USR     */
                 read_string(acc_sock, usr, 944);
@@ -382,6 +374,8 @@ check_operation:
                                         stored_pw[i] = curr;
                         }
 
+			//stored_pw[i] = '\0';
+			printf("pw = %s, stored = %s\n", pw, stored_pw);
                         /*      CHECKING IF PW IS CORRECT       */
                         if (strcmp(stored_pw, pw) != 0){
                                 printf("no matching pw\n");
@@ -506,13 +500,14 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 another_code:
                 read_int(acc_sock, &code, 374);
 
-//      printf("code = %d\n", code);
+      printf("code = %d\n", code);
         if (code < 0){
                 printf("opearazione annullata client side\n\n");
                 return 1;
         }
 
         is_mine = my_mex[code];
+	printf("ismine = %d\n", is_mine);
         /*SEND IF THE CODE IS ACCEPTED*/
         write_int(acc_sock, is_mine, 383);
 
@@ -702,8 +697,14 @@ void mng_cambio_pass(int acc_sock, char *my_usr){
         if (dest_file == NULL)
                 error(1442);
 
+	/*new_pw = malloc(sizeof(char) * MAX_PW_LEN);
+	if (new_pw == NULL)
+		error(694);
+	bzero(new_pw, MAX_PW_LEN);*/
+
         read_string(acc_sock, &new_pw, 1548);
         pw_len = strlen(new_pw);
+	printf("pw_len = %d\n", pw_len);
 
         exist = check_destination(&my_usr, &dest_file);
         if (exist){
@@ -727,6 +728,7 @@ void mng_cambio_pass(int acc_sock, char *my_usr){
                 ret = 1;
         }
 exit_lab:
+	//free(new_pw);
         write_int(acc_sock, ret, 1572);
         if (!ret)
                 exit(EXIT_FAILURE);
