@@ -161,9 +161,24 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 
                         /*WRITING FOUND*/
                         write_int(acc_sock, found, 710);
+			
+		       	/*WRITING IS_NEW*/
+                        write_int(acc_sock, *(mex -> is_new), 714);
 
+                        /*WRITING SENDER*/
+                        write_string(acc_sock, mex -> usr_sender, 718);
+
+                        /*WRITING OBJECT*/
+                        write_string(acc_sock, mex -> object, 723);
+
+                        /*WRITING TEXT*/
+                        write_string(acc_sock, mex -> text, 727);
+
+                        /*WRITING POSITION*/
+                        write_int(acc_sock, i, 731); //*(mex -> position), 731);
+		
 			/*	SENDING MEX	*/
-			send_mex(acc_sock, mex);
+		//	send_mex(acc_sock, mex);
 
                         *(mex -> is_new) = 0;
                         found = 0;

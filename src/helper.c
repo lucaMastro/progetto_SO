@@ -88,7 +88,7 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 	read_string(sock, &one_string, 88);
 
 	/*PARSING*/
-		//isnew
+	//isnew
 	token = strtok(one_string, "\037");
 	isnew = atoi(token);
 	*(mex -> is_new) = isnew;
@@ -100,7 +100,7 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 				strcpy(mex -> usr_sender, token);
 				break;
 			case 1:
-				strcpy(mex -> usr_destination, token);
+				//strcpy(mex -> usr_destination, token);
 				break;
 			case 2:
 				strcpy(mex -> object, token);
@@ -109,12 +109,14 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 				strcpy(mex -> text, token);
 				break;
 			case 4:
-				*(mex -> position) = atoi(token);
+				//*(mex -> position) = atoi(token);
 				break;
 			default:
 				break;
 		}
 		i++;
+		printf("\ttoken: %s, len = %d\n", token, strlen(token));
+		printf("\n");
 	}
 	return isnew;
 }

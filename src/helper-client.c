@@ -19,23 +19,27 @@
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
-        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0; 
- //       char *sender, *object, *text;
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0, pos; 
+        char *sender, *object, *text;
         message *mex;
         if ((mex = malloc(sizeof(mex))) == NULL)
                 error(24);
 
         if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
                 error(27);
+	//bzero(mex -> usr_destination, MAX_USR_LEN);
 
         if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
 		error(30);
+	//bzero(mex -> usr_destination, MAX_USR_LEN);
 	
         if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
 		error(33);
+	//bzero(mex -> usr_destination, MAX_OBJ_LEN);
 
         if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
 		error(36);
+	//bzero(mex -> usr_destination, MAX_MESS_LEN);
 
         if ((mex -> is_new = malloc(sizeof(int))) == NULL)
 		error(39);
@@ -52,12 +56,32 @@ start:
         while(found && again){
 		if (leave)
 			break;
-                isnew = get_mex(sock_ds, mex);
-		printf("hel-client: isnew = %d\n", *(mex -> is_new));
+
+//                isnew = get_mex(sock_ds, mex);
+ /*READING IS_NEW*/
+
+
+		read_int(sock_ds, &isnew, 101);		
+		
+		//printf("hel-client: isnew = %d\n", *(mex -> is_new));
 		/*CHECKING IS_NEW*/
                 if (!isnew && flag)
                         goto start;
 
+		/*READING SENDER*/
+                read_string(sock_ds, &sender, 108);
+                /*READING OBJECT*/
+                read_string(sock_ds, &object, 112);
+                /*READING TEXT*/
+                read_string(sock_ds, &text, 116);
+                /*READING POSITION*/
+                read_int(sock_ds, &pos, 119);
+                mex -> usr_sender = sender;
+                mex -> object = object;
+                mex -> text = text;
+                mex -> usr_destination = my_usrname;
+                *(mex -> is_new) = isnew;
+                *(mex -> position) = pos;
 
                 /*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
