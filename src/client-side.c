@@ -1,4 +1,4 @@
-#include <sys/socket.h>       /*  socket definitions        */
+#include <sys/socket.h>       /*  soceet definitions        */
 #include <sys/types.h>        /*  socket types              */
 #include <arpa/inet.h>        /*  inet (3) funtions         */
 #include <unistd.h>           /*  misc. UNIX functions      */
@@ -26,15 +26,13 @@ void handler_sigpipe(){
 }
 
 void handler_sigint(){
-	int operation = 4;
-	
+	int operation = MAX_NUM_MEX + 1;
+	char *op;
+
 //	fflush(stdin);
 	printf("\nconnessione interrotta.\n");
-	if (write(sock_ds, (void *) &operation, 1) == -1){
-		perror("error writing on socket");
-		exit(-1);
-	}
 //	log_out(my_usrname);
+	sprintf(op, "%d", operation);
 	exit(EXIT_SUCCESS);
 }
 

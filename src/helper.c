@@ -15,19 +15,19 @@ void error(int line){
 }
 
 void stampa_messaggio(message *mess){
-	char c = 'y';
+	char c;
 /*	printf("mess = %p\n", mess);
 	printf("isnew = %p, %d\n", mess->is_new, *(mess->is_new));
 	printf("pos = %p\n", mess->position);
 	printf("send = %p\n", mess->usr_sender);
 	printf("dest = %p\n", mess->usr_destination);
 	printf("obj = %p\n", mess->object);
-	printf("text = %p\n", mess->text);
+	printf("text = %p\n", mess->text);*/
 	
 	if (*(mess -> is_new))
 		c = 'y';
 	else
-		c = 'n';*/
+		c = 'n';
 	
 	printf(".....................................................................................\n\n");
 	printf("\t\tcodice = %d\n", *(mess -> position));
@@ -45,13 +45,13 @@ void write_string(int sock, char *string, int line){
 //	printf("string %s\nlen %d\n\n", string, len);
 	/*if (write(sock, &len, sizeof(len)) == -1)
 		error(1172);*/
-	write_int(sock, len, 50);
+	write_int(sock, len, line);
 
 	if (write(sock, string, len) == -1)
-		error(1175);
+		error(line);
 }
 
-void read_string(int sock, char **string, int line){
+int read_string(int sock, char **string, int line){
 	int len;
 
 	read_int(sock, &len, 58);
@@ -59,25 +59,51 @@ void read_string(int sock, char **string, int line){
 		error(1182);*/
 	
 	if ((*string = malloc(sizeof(char) * len)) == NULL)
-		error(1185);
+		error(62);
 	bzero(*string, len);
 
 	if ( (len = read(sock, *string, len)) == -1)
-		error(1189);
-	printf("ho letto %d caratteri\n", len);
+		error(line);
+//	printf("ho letto %d caratteri\n", len);
+	if (atoi(*string) == MAX_NUM_MEX + 1)
+		return 1;
+	return 0;
 }
 
 void write_int(int sock, int num, int line){;
+	//IMPEDIRE L'INSERIMENTO DI NUMERI N TALI CHE:  |N| > 9999.
+	char *str_num = malloc(sizeof(char) * MAX_CIFRE); //-9999
 
-	if (write(sock, &num, sizeof(num)) == -1)
-		error(1195);
+	if (str_num == NULL){
+		printf("error helper at line: 77.\n");
+		error(line);
+	}
+	bzero(str_num, MAX_CIFRE);
+
+	sprintf(str_num, "%d", num);
+	if (write(sock, str_num, MAX_CIFRE) == -1)
+		error(line);
+	free(str_num);
 }
 
 
-void read_int(int sock, int *num, int line){
+int read_int(int sock, int *num, int line){
 
-	if (read(sock, num, sizeof(*num)) == -1)
-		error(1202);
+	char *str_num = malloc(sizeof(char) * MAX_CIFRE);
+	if (str_num == NULL){
+		printf("error helper at line: 77.\n");
+		error(line);
+	}
+	bzero(str_num, MAX_CIFRE);
+
+	if (read(sock, str_num, MAX_CIFRE) == -1)
+		error(line);
+	
+	*num = atoi(str_num);
+	free(str_num);
+	if (*num == MAX_NUM_MEX + 1)
+		return 1;
+	return 0;
 }
 
 
@@ -115,8 +141,8 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 				break;
 		}
 		i++;
-		printf("\ttoken: %s, len = %d\n", token, strlen(token));
-		printf("\n");
+		//printf("\ttoken: %s, len = %d\n", token, strlen(token));
+		//printf("\n");
 	}
 	return isnew;
 }

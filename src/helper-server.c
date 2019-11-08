@@ -65,7 +65,7 @@ void inizializza_server(message **mex_list){ //sequenza di messaggi
 
 int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last, int *server, int sem_write, int *my_mex, int *my_new_mex, char *client_usr, int flag){ //flag == 1 means its a write back
 	char *usr_destination, *usr_sender, *object, *text, *destination_file;
-	int i, len, fileid, exist;
+	int i, len, fileid, exist, get_out;
 	struct sembuf sops;
 
 	sops.sem_flg = 0;
@@ -75,7 +75,9 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 start:
 
 	/*	READING USR_DESTINATION	*/
-	read_string(acc_sock, &usr_destination, 199);
+	if(read_string(acc_sock, &usr_destination, 199))
+		log_out(client_usr);
+		
 	len = strlen(usr_destination);
 
 //	printf("usr dest = %s, len = %d\n", usr_destination, len);
@@ -92,12 +94,16 @@ start:
 	}
 
 	/*	READING USR_SENDER	*/
-	read_string(acc_sock, &usr_sender, 231);
+	if (read_string(acc_sock, &usr_sender, 231))
+		log_out(client_usr);
+
 	/*	READING OBJECT	*/
-	read_string(acc_sock, &object, 235);
+	if (read_string(acc_sock, &object, 235))
+		log_out(client_usr);
 
 	/*	READING TEXT	*/
-	read_string(acc_sock, &text, 238);
+	if (read_string(acc_sock, &text, 238))
+		log_out(client_usr);
 
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
@@ -185,7 +191,8 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 
 			/*READING USR_WILL*/
 read_usr_will:
-                        read_int(acc_sock, &op, 613);
+                        if (read_int(acc_sock, &op, 613))
+				log_out(usr);
                         
 			switch(op){
 				case 0:
@@ -243,7 +250,8 @@ int managing_usr_menu(int acc_sock, message **message_list, int *position, int *
                 stampa_bitmask(server, *last);
 
                 printf("\nwaiting for an operation:\n");
-                read_int(acc_sock, &operation, 693);
+                if (read_int(acc_sock, &operation, 693))
+			log_out(client_usrname);
 
                 printf("inserita l'operazione %d\n", operation);
                 switch (operation){
@@ -317,7 +325,8 @@ check_operation:
 	bzero(stored_pw, MAX_PW_LEN + 1);
         ret = 0;
         printf("waiting for an operation:\n");
-        read_int(acc_sock, &operation, 931);
+        if (read_int(acc_sock, &operation, 931))
+		log_out(*usr);
 
         printf("operation %d accepted\n", operation);
 
@@ -334,17 +343,21 @@ check_operation:
 		bzero(pw, MAX_PW_LEN);*/
 
                 /*      READING USR     */
-                read_string(acc_sock, usr, 944);
-                len_usr = strlen(*usr);
+                if (read_string(acc_sock, usr, 944))
+			log_out(*usr);
 
-                if (len_usr > MAX_USR_LEN){
-                        printf("usrname too long\n");
-                        ret = 4;
-                        goto send_to_client;
-                }
+/*NON NECESSARIO: CONTROLLO FATTO CLIENT-SIDE.
+len_usr = strlen(*usr);
+if (len_usr > MAX_USR_LEN){
+printf("usrname too long\n");                       
+ret = 4;
+goto send_to_client;        
+}*/
 
                 /*      READING PASSWORD        */
-                read_string(acc_sock, &pw, 958);
+                if (read_string(acc_sock, &pw, 958))
+			log_out(*usr);
+
                 len_pw = strlen(pw);
 
                 /*      MAKING THE STRING: ".db/<name_user>.txt"        */
@@ -513,14 +526,18 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
         struct sembuf sops;
         message *mex;
 
-        printf("\nstarting gestore_eliminazioni.\n");
         /*READ MODE*/
-        read_int(acc_sock, &mode, 369);
+        if (read_int(acc_sock, &mode, 369))
+		log_out(usr);
+
         if (mode >= 0)
-                code = mode;
-        else
+	 	code = mode;
+	
+        else{
                 another_code:
-                read_int(acc_sock, &code, 374);
+                if (read_int(acc_sock, &code, 374))
+			log_out(usr);
+	}
 
       printf("code = %d\n", code);
         if (code < 0){
@@ -580,7 +597,9 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
         }
 
         if (mode < 0){
-                read_int(acc_sock, &again, 444);
+                if (read_int(acc_sock, &again, 444))
+			log_out(usr);
+
                 if (again)
                         goto another_code;
         }
@@ -724,7 +743,9 @@ void mng_cambio_pass(int acc_sock, char *my_usr){
 		error(694);
 	bzero(new_pw, MAX_PW_LEN);*/
 
-        read_string(acc_sock, &new_pw, 1548);
+        if (read_string(acc_sock, &new_pw, 1548))
+		log_out(my_usr);
+
         pw_len = strlen(new_pw);
 	printf("pw_len = %d\n", pw_len);
 

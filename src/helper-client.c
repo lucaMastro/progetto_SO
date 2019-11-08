@@ -95,7 +95,7 @@ start:
 	        printf("......................................................................................\n");
         	printf("......................................................................................\n");
 		printf("..............................Il messaggio ricevuto è:................................\n");
-		printf("%p, len = %d\n", mex, strlen( mex -> object));
+		//printf("%p, len = %d\n", mex, strlen( mex -> object));
                 stampa_messaggio(mex);
 	        printf("......................................................................................\n");	
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
@@ -140,7 +140,7 @@ usr_will:
 					printf("operazione non disponibile. riprovare\n");
 					goto usr_will;
 				}*/
-				printf("premi un tasto per continuare la ricerca: ");
+				printf("premi un tasto per continuare la ricerca:");
 				fflush(stdin);
 				break;
 			case 1:	
@@ -167,11 +167,11 @@ usr_will:
 	        else{//sono entrato nel while
         	        if (flag){//solo messaggi new
                 	        if (again)
-                        	        printf("non ci sono altri nuovi mess.\n");
+                        	        printf("\nnon ci sono altri nuovi mess.\n");
 	                }
         	        else{
                 	        if (again)
-                        	        printf("non ci sono altri messaggi\n");
+                        	        printf("\nnon ci sono altri messaggi\n");
 	                }
         	}
 	}
@@ -407,8 +407,7 @@ portal:
 
 
         //sending the selected operation:
-        if (write(sock_ds, &operation, sizeof(operation)) == -1)
-                error(745);
+        write_int(sock_ds, operation, 410);
 
         if (operation == 0){
                 free(*usr);
@@ -428,11 +427,9 @@ get_usr:
                 printf("usrname too long. try again:\n");
                 goto get_usr;
         }
-        if (write(sock_ds, &len, sizeof(len)) == -1)
-                error(765);
-
-        if (write(sock_ds, *usr, len) == -1)
-                error(768);
+      //  write_int(sock_ds, len, 431);
+               
+        write_string(sock_ds, *usr, 433);
 pw_get:
         printf("inserisci password (max %d caratteri):\n", MAX_PW_LEN);
         if (scanf("%ms", &pw) == -1 && errno != EINTR)
@@ -445,11 +442,9 @@ pw_get:
         }
         fflush(stdin);
 
-        if (write(sock_ds, &len, sizeof(len)) == -1)
-                error(784);
+        //write_int(sock_ds, len, 445);
 
-        if (write(sock_ds, pw, len) == -1)
-                error(785);
+        write_string(sock_ds, pw, 447);
 
         //reading response:
         read_int(sock_ds, &ret, 879);
@@ -508,7 +503,7 @@ void close_client(int sock_ds){
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi
         int is_mine, ret = 0, again, fine, code;
-
+	
         /*SCRIVO MODE*/
         write_int(sock_ds, mode, 326);
 

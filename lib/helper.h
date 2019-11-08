@@ -6,7 +6,7 @@
 #define MAX_PW_LEN 10
 #define MAX_OBJ_LEN 20
 #define MAX_MESS_LEN 100
-
+#define MAX_CIFRE 5
 
 typedef struct MESSAGE{
         char *usr_destination;
@@ -18,9 +18,9 @@ typedef struct MESSAGE{
 } message;
 
 void stampa_messaggio(message *mess);
-void read_int(int sock, int *num, int line);
+int read_int(int sock, int *num, int line);
 void write_int(int sock, int num, int line);
-void read_string(int sock, char **string, int line);
+int read_string(int sock, char **string, int line);
 void write_string(int sock, char *string, int line);
 void read_mex(int sock, message **mex_list, int *position, int semid);
 void write_mex(int sock, message *mex);
