@@ -27,19 +27,19 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
 
         if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
                 error(27);
-	//bzero(mex -> usr_destination, MAX_USR_LEN);
+	bzero(mex -> usr_destination, MAX_USR_LEN);
 
         if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
 		error(30);
-	//bzero(mex -> usr_destination, MAX_USR_LEN);
+	bzero(mex -> usr_destination, MAX_USR_LEN);
 	
         if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
 		error(33);
-	//bzero(mex -> usr_destination, MAX_OBJ_LEN);
+	bzero(mex -> usr_destination, MAX_OBJ_LEN);
 
         if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
 		error(36);
-	//bzero(mex -> usr_destination, MAX_MESS_LEN);
+	bzero(mex -> usr_destination, MAX_MESS_LEN);
 
         if ((mex -> is_new = malloc(sizeof(int))) == NULL)
 		error(39);
@@ -510,17 +510,34 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
         if (mode >= 0)
                 code = mode;
 
-        else{
-                another_code:
-                printf("dammi il codice del messaggio da eliminare.\nNOTA: se non hai messaggi associati al codice inserito, l'operazione verrà interrotta.\n(inserire un numero negativo per annullare)\n");
+        else{ //mode < 0
+               // printf("dammi il codice del messaggio da eliminare.\nNOTA: se non hai messaggi associati al codice inserito, l'operazione verrà interrotta.\n(inserire un numero negativo per annullare)\n");
+
+		another_code:
+        	printf("\e[1;1H\e[2J");
+
+	        printf(".....................................................................................\n");
+        	printf(".....................................................................................\n");
+	        printf("................__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _..............\n");
+        	printf("...............|                                                       |.............\n");
+	        printf("...............|           GESTORE ELIMINAZIONE DEI MESSAGGI           |.............\n");
+        	printf("...............|__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _|.............\n");
+	        printf(".....................................................................................\n");
+        	printf(".....................................................................................\n");
+	        printf(".....................................................................................\n");	
+        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+	        printf("|                                                                                    |\n");
+	        printf("|   *Inserisci il codice del messaggio da eliminare				     |\n");
+	        printf("|   *Inserisci un numero negativo per annullare e tornare al menù principale	     |\n");
+	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+		
                 if (scanf("%d", &code) == -1 && errno != EINTR)
                         error(308);
                 fflush(stdin);
 
-		if (code > MAX_NUM_MEX){
-			printf("codice non valido. riprova.\n");
-			goto another_code;
-		}
+		if (code > MAX_NUM_MEX)
+			goto not_acc; //just writing that "the code isnt accepted", no writing why.
+
                 /*SCRIVO CODE*/
                 write_int(sock_ds, code, 328);
                 if (code < 0){
@@ -531,8 +548,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
 
-        printf("%d\n", is_mine);
-        if (is_mine == 1){
+        if (is_mine == 1 && code <= MAX_NUM_MEX){
                 printf("codice accettato. attendi conferma eliminazione\n");
 
                 /*READ IF ELIMINATION WAS OK*/
@@ -546,10 +562,12 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                 }
         }
         else{
+		not_acc:
                 if (mode >= 0)
                         printf("messaggio già eliminato\n");
                 else{
-                        printf("errore: non hai messaggi ricevuti associati al codice inserito.per favore riporva.\n\n");
+                        printf("Errore: non hai messaggi ricevuti associati al codice inserito. Premi un tasto e riprova.\n");
+			fflush(stdin);
                         goto another_code;
                 }
         }
@@ -557,7 +575,13 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
         /*CHECKING USR'S WILL. eseguire solo se mode < 0*/
         if (mode < 0){
 usr_will:
-                printf("eliminare un altro messaggio? (0 = no, 1 = si)\n");
+	        printf(".....................................................................................\n");	
+        	printf(" ______ ________ ________ __Altre Operazioni Disponibili__ ________ ________ _____ _\n");
+	        printf("|                                                                                   |\n");
+        	printf("|   OPERAZIONE 0 : Interrompere le eliminazioni e tornare al menu principale	    |\n");
+	        printf("|   OPERAZIONE 1 : Eliminare un altro messaggio					    |\n");
+	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ ____ _|\n\n");
+		printf("\nQuale operazione vuoi svolgere?\n");
                 if (scanf("%d", &again) == -1 && errno != EINTR)
                         error(348);
 

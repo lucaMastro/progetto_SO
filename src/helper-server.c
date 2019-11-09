@@ -539,19 +539,19 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 			log_out(usr);
 	}
 
-      printf("code = %d\n", code);
+      //printf("code = %d\n", code);
         if (code < 0){
                 printf("opearazione annullata client side\n\n");
                 return 1;
         }
 
         is_mine = my_mex[code];
-	printf("ismine = %d\n", is_mine);
+//	printf("ismine = %d\n", is_mine);
         /*SEND IF THE CODE IS ACCEPTED*/
         write_int(acc_sock, is_mine, 383);
 
         if (is_mine == 1){
-                printf("codice %d accettato\n", code);
+  //              printf("codice %d accettato\n", code);
 
                 /*TRY GETTING CONTROL*/
                 sops.sem_flg = 0;
