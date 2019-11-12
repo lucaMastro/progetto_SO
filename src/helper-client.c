@@ -76,12 +76,13 @@ start:
                 read_string(sock_ds, &text, 116);
                 /*READING POSITION*/
                 read_int(sock_ds, &pos, 119);
-                mex -> usr_sender = sender;
-                mex -> object = object;
-                mex -> text = text;
-                mex -> usr_destination = my_usrname;
-                *(mex -> is_new) = isnew;
-                *(mex -> position) = pos;
+
+		strcpy(mex -> usr_sender, sender);
+		strcpy(mex -> object, object);
+		strcpy(mex -> text, text);
+		strcpy(mex -> usr_destination, my_usrname);
+		*(mex -> is_new) = isnew;
+		*(mex -> position) = pos;
 
                 /*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
@@ -640,7 +641,8 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
         //invio text
         write_string(sock_ds, text, 1332);
-	
+
+	free(re_obj);	
 	free(text);
         return 1;
 }

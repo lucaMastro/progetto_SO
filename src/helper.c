@@ -61,10 +61,11 @@ int read_string(int sock, char **string, int line){
 	if ((*string = malloc(sizeof(char) * len)) == NULL)
 		error(62);
 	bzero(*string, len);
-
+	printf("string: %s\n", *string);
 	if ( (len = read(sock, *string, len)) == -1)
 		error(line);
 //	printf("ho letto %d caratteri\n", len);
+	printf("string: %s\n", *string);
 	if (atoi(*string) == MAX_NUM_MEX + 1)
 		return 1;
 	return 0;
