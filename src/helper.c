@@ -42,10 +42,12 @@ void stampa_messaggio(message *mess){
 
 void write_string(int sock, char *string, int line){
 	int len = strlen(string);
-//	printf("string %s\nlen %d\n\n", string, len);
+	
 	/*if (write(sock, &len, sizeof(len)) == -1)
 		error(1172);*/
+
 	write_int(sock, len, line);
+//	printf("***WRITE STRING: %s.\n\n", string);
 
 	if (write(sock, string, len) == -1)
 		error(line);
@@ -58,14 +60,15 @@ int read_string(int sock, char **string, int line){
 	/*if (read(sock, &len, sizeof(len)) == -1)
 		error(1182);*/
 	
-	if ((*string = malloc(sizeof(char) * len)) == NULL)
+//	printf("***READ_STRING: len %d\n", len);	
+	if ((*string = malloc(sizeof(char) * (len+1))) == NULL)
 		error(62);
-	bzero(*string, len);
-	printf("string: %s\n", *string);
+	bzero(*string, len+1);
+//	printf("string: %s.\n", *string);
 	if ( (len = read(sock, *string, len)) == -1)
 		error(line);
 //	printf("ho letto %d caratteri\n", len);
-	printf("string: %s\n", *string);
+//	printf("string: %s\n", *string);
 	if (atoi(*string) == MAX_NUM_MEX + 1)
 		return 1;
 	return 0;
@@ -82,6 +85,7 @@ void write_int(int sock, int num, int line){;
 	bzero(str_num, MAX_CIFRE);
 
 	sprintf(str_num, "%d", num);
+//	printf("\n***WRITE INT: string_v: %s. int_v: %d\n", str_num, num);
 	if (write(sock, str_num, MAX_CIFRE) == -1)
 		error(line);
 	free(str_num);
@@ -101,6 +105,7 @@ int read_int(int sock, int *num, int line){
 		error(line);
 	
 	*num = atoi(str_num);
+//	printf("\n***READ INT: string_v: %s. int_v: %d\n", str_num, *num);
 	free(str_num);
 	if (*num == MAX_NUM_MEX + 1)
 		return 1;

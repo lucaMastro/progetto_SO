@@ -1,1 +1,5 @@
 1. errore di segmentazione se ctrl+c mentre il sistema aspetta input
+
+2. il messaggio ricevuto successivo a un write back ha dei campi sbagliati. fixato aumentando di 1 la dimensione della stringa allocata e bzerando un carattere in più. è come se mancasse il delimitatore
+
+3. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.

@@ -196,7 +196,6 @@ read_usr_will:
                         
 			switch(op){
 				case 0:
-			
 					ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
 					break;
 

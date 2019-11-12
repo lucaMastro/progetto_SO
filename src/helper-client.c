@@ -600,7 +600,6 @@ exit_lab:
 }
 
 int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
-
         char *text, *re_obj;
         int len = strlen(object), ret;
 
