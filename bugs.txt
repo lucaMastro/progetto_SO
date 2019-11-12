@@ -1,0 +1,1 @@
+1. errore di segmentazione se ctrl+c mentre il sistema aspetta input
