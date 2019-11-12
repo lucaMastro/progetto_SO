@@ -408,8 +408,7 @@ goto send_to_client;
                                         stored_pw[i] = curr;
                         }
 
-			//stored_pw[i] = '\0';
-			printf("pw = %s, stored = %s\n", pw, stored_pw);
+		//	printf("pw = %s, stored = %s\n", pw, stored_pw);
                         /*      CHECKING IF PW IS CORRECT       */
                         if (strcmp(stored_pw, pw) != 0){
                                 printf("no matching pw\n");
@@ -423,7 +422,7 @@ goto send_to_client;
 
                         if((atoi(&is_log)) == 1){
                                 printf("usr already logged\n");
-                                ret = 3;
+				ret = 3;
                                 goto send_to_client;
                         }
 

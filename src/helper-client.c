@@ -16,6 +16,10 @@
 #define fflush(stdin) while(getchar() != '\n')
 #define audit printf("ok\n")
 
+/*void handler_ign(int signo){
+	printf("\n");
+	sigignore(signo);
+}*/
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
@@ -663,7 +667,7 @@ int delete_me(int sock_ds){//, char *usr){
 void cambia_pass(int sock_ds){
         int ret;
         char *new_pw;
-
+	
         printf("inserisci la nuova password:\n");
         if (scanf("%ms", &new_pw) == -1 && errno != EINTR)
                 error(1423);
@@ -676,6 +680,4 @@ void cambia_pass(int sock_ds){
                 printf("password cambiata con successo.\n");
         free(new_pw);
 }
-
-
 

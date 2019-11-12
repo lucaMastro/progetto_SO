@@ -18,13 +18,14 @@ int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort);
 char *my_usrname;
 int sock_ds;
 
+
 void handler_sigpipe(){
 	printf("\ncatched SIGPIPE\njust exiting\n");
 //	while(getchar() != '\n'){};
 //	log_out(my_usrname); //inviare segnale di log-out al server
 	exit(EXIT_SUCCESS);
 }
-
+/*
 void handler_sigint(){
 	int operation = MAX_NUM_MEX + 1;
 	char *op;
@@ -33,8 +34,10 @@ void handler_sigint(){
 	printf("\nconnessione interrotta.\n");
 //	log_out(my_usrname);
 	sprintf(op, "%d", operation);
+	write_string(sock_ds, op, 37);
 	exit(EXIT_SUCCESS);
-}
+}*/
+
 
 int main(int argc, char *argv[]){
 	/*argv[1] = server_addr
@@ -45,7 +48,7 @@ int main(int argc, char *argv[]){
         int server_len, operation;
  	char *port, *addr; //, *my_usrname;
 	struct hostent *he;
-	
+
 	my_usrname = malloc(sizeof(char) * MAX_USR_LEN);
 	if (my_usrname == NULL){
 		perror("error initializing usrname");
@@ -92,11 +95,12 @@ int main(int argc, char *argv[]){
 	printf("connessione al server riuscita.\npremi INVIO per continuare.\n");
 	while(getchar() != '\n') {};
 	
-/*	printf("\n\nSENDING TEST MESS:\n");
+	/*printf("\n\nSENDING TEST MESS:\n");
 	test_client_func(sock_ds);*/
 
 	signal(SIGPIPE, handler_sigpipe);
-	signal(SIGINT, handler_sigint);
+	signal(SIGINT, SIG_IGN);
+
 reg_log:
 	usr_registration_login(sock_ds, &my_usrname);
 	

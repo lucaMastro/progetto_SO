@@ -1,4 +1,18 @@
-1. errore di segmentazione se ctrl+c mentre il sistema aspetta input.
+
+3. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
+
+
+****		FIXED BUGS		****
+
+-cambio pass. se faccio ctrl+c invece di inserire la pass, il file ha cancellato la pass. 
+		----> Fixed con sigignore
+
+-il messaggio ricevuto successivo a un write back ha dei campi sbagliati.
+		----> fixato aumentando di 1 la dimensione della stringa allocata e bzerando un carattere in più. è come se mancasse il delimitatore
+
+
+
+-errore di segmentazione se ctrl+c mentre il sistema aspetta input.
 ****CASI PARTICOLARI****
 	-portale di accesso, aspetta l'operazione
 	-gestore letture dei messaggi
@@ -6,14 +20,7 @@
 		+inserisci l'usrname
 		+inserisci l'oggetto
 		+inserisci il messaggio
+	-gestore eliminazioni, secondo input		
 	-cancella account, nei 3 secondi di logout
-		
-
-
-2. il messaggio ricevuto successivo a un write back ha dei campi sbagliati. fixato aumentando di 1 la dimensione della stringa allocata e bzerando un carattere in più. è come se mancasse il delimitatore
-
-3. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
-
-4. gestore eliminazioni: al primo input se do ctrl+c non fa logout
-
-5. cambio pass. se faccio ctrl+c invece di inserire la pass, il file ha cancellato la pass.
+-gestore eliminazioni: al primo input se do ctrl+c non fa logout
+		---> entrambi fixed ignorando sempre il ctrl+c

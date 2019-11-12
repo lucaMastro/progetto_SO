@@ -11,7 +11,6 @@ void error(int line){
 	printf("error at line %d:\n", line);
 	perror("error");
 	exit(EXIT_FAILURE);
-
 }
 
 void stampa_messaggio(message *mess){
