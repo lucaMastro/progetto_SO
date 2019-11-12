@@ -514,10 +514,14 @@ void update_position(int *position, int *server, int last){
 
 void stampa_bitmask(int *bitmask, int last){
         int i;
-
-        for(i = 0; i < last; i++)
-                printf("%d ", bitmask[i]);
-        printf("\n");
+	
+	printf("[");
+        for(i = 0; i < last; i++){
+                printf("%d", bitmask[i]);
+		if (i != last - 1)
+			printf(", ");
+	}
+        printf("]\n");
 }
 
 int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position, int *last){
