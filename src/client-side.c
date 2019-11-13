@@ -49,6 +49,9 @@ int main(int argc, char *argv[]){
  	char *port, *addr; //, *my_usrname;
 	struct hostent *he;
 
+	signal(SIGPIPE, handler_sigpipe);
+	signal(SIGINT, SIG_IGN);
+
 	my_usrname = malloc(sizeof(char) * MAX_USR_LEN);
 	if (my_usrname == NULL){
 		perror("error initializing usrname");
@@ -98,8 +101,6 @@ int main(int argc, char *argv[]){
 	/*printf("\n\nSENDING TEST MESS:\n");
 	test_client_func(sock_ds);*/
 
-	signal(SIGPIPE, handler_sigpipe);
-	signal(SIGINT, SIG_IGN);
 
 reg_log:
 	usr_registration_login(sock_ds, &my_usrname);

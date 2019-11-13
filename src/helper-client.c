@@ -207,7 +207,7 @@ restart:
         len_send = strlen(sender);
 
         printf("inserisci l'oggetto del messaggio (max %d caratteri):\n", MAX_OBJ_LEN);
-        if (scanf("%m[^\n]", &obj) == -1 && errno != EINTR)
+        if (scanf(" %m[^\n]", &obj) == -1 && errno != EINTR)
                 error(485);
 
         fflush(stdin);
@@ -219,7 +219,7 @@ restart:
         }
 
         printf("inserisci il testo del messaggio: (max %d caratteri):\n", MAX_MESS_LEN);
-        if (scanf("%m[^\n]", &mes) == -1 && errno != EINTR)
+        if (scanf(" %m[^\n]", &mes) == -1 && errno != EINTR)
                 error(497);
         fflush(stdin);
 
@@ -632,7 +632,7 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
         /*GETTING THE TEXT FROM USR*/
         printf("inserisci il messaggio:\n");
-        if (scanf("%m[^\n]", &text) == -1 && errno != EINTR)
+        if (scanf(" %m[^\n]", &text) == -1 && errno != EINTR)
                 error(1235);
 
         fflush(stdin);
