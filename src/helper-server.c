@@ -17,6 +17,31 @@
 #define audit printf("ok\n")
 
 
+void send_file_db(int acc_sock){
+	FILE *fd;
+	char buffer[MAX_USR_LEN + 1], *ret;
+	int found;
+
+	fd = fopen(".db/list.txt", "r");
+	if (fd == NULL)
+		error(378);
+	
+	while (1){
+		found = 1;
+		bzero(buffer, MAX_USR_LEN + 1); 
+		ret = fgets(buffer, MAX_USR_LEN + 1, fd);
+		if (ret == NULL)
+			break;
+		write_int(acc_sock, found, 383);
+		write_string(acc_sock, buffer, 385);
+	}
+
+	found = 0;
+	write_int(acc_sock, found, 383);
+	fclose(fd);
+}
+
+
 
 void inizializza_server(message **mex_list){ //sequenza di messaggi
 	int i, fileid;
@@ -87,6 +112,8 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	sops.sem_op = -1;
 
 start:
+
+	send_file_db(acc_sock);
 
 	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
@@ -329,7 +356,7 @@ is_read_op:
 
 
 
-void copy_db_file(char *deleting_string){
+void update_db_file(char *deleting_string){
 	char string[MAX_USR_LEN + 1], del_string[MAX_USR_LEN + 1], c;
 	int fileid, fileid2, i;
 	
@@ -367,6 +394,7 @@ void copy_db_file(char *deleting_string){
 	close(fileid);
 	close(fileid2);
 }
+
 
 void managing_usr_registration_login(int acc_sock, char **usr){
         int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
@@ -751,7 +779,7 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
         update_last(server, last);
 
 	/*	UPDATING LIST OF USERS	*/
-	copy_db_file(usr);
+	update_db_file(usr);
 
         /*UPDATING SEM VALUE*/
         sops.sem_op = 1;

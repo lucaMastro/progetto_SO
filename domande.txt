@@ -1,0 +1,5 @@
+1. va bene ignorare interamente ctrl+c?
+2. va bene inviare il mess spezzato?
+3. inserimento password non visibili..?
+4. come testare la concorrenza?
+

@@ -15,3 +15,4 @@ int check_destination(char **usr_destination, char **dest);
 void server_test(int acc_sock, message **mex_list, int *position, int semid);
 void mng_cambio_pass(int acc_sock, char *my_usr);
 void log_out(char *usr);
+void update_db_file(char *deleting_string);

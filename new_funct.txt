@@ -1,0 +1,15 @@
+1. quando invio un messaggio, fornire all'utente tutti i possibili destinatari.
+realizzazione:
+
+idee:
+- dopo ogni registrazione, aggiungere a un file .txt l'usrname dell'utente, in fase di registrazione. in questo caso il problema sarebbe gestire le eliminazioni. 
+	gestita eliminazione eliminando la riga corrispondende all'username eliminato.
+
+
+2. inserire nella definizione del messaggio un campo intero buleano che spicifica se chi ha inviato il messaggio si è cancellato. qualora il mittente risultasse eliminato, blocco la possibilità di rispondere al messaggio. in questo modo risolvo il problema del seguente scenario:
+
+	a invia un messaggio a b
+	a elimina il suo account
+	un nuovo utente si registra come a
+	b legge il messaggio e risponde
+	il messaggio arriva al nuovo b

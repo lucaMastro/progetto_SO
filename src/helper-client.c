@@ -185,13 +185,41 @@ usr_will:
 
 }
 
+void get_file_db(int sock_ds){
+	
+	char *buffer, *token;
+	int found;
+
+	buffer = malloc(sizeof(char) * (MAX_USR_LEN +1));
+	if (buffer == NULL)
+		error(195);
+
+	read_int(sock_ds, &found, 194);
+	while (found){
+		bzero(buffer, MAX_USR_LEN + 1);
+		read_string(sock_ds, &buffer, 197);
+		
+		token = strtok(buffer, "\n");
+		printf("%s ", token);
+
+		/* UPDATING IF FOUND */
+		read_int(sock_ds, &found, 194);
+	}
+
+	free(buffer);
+	return;
+}
+
+
 void invia_messaggio(int acc_sock, char *sender){
         char *destination, *obj, *mes;
         int len_dest, len_send, len_obj, len_mess, ret;
 
+	get_file_db(acc_sock);
 restart:
+	
         //GETTING DATA AND THEIR LEN
-        printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
+	printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
         if (scanf("%ms", &destination) == -1 && errno != EINTR)
                 error(470);
 

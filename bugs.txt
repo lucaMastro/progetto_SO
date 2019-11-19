@@ -11,6 +11,20 @@ fare refactory, magari con visuale
 
 6. dopo elimina account viene eseguito logout (?)
 
+7. POICHÈ HO CREATO IL FILE LIST, LISTA DI UTENTI, LA REGISTRAZIONE DEVE AVVENIRE IN MODO ATOMICO: USARE IL SOLITO SEMAFORO. PER LE CANCELLAZIONI È GIÀ SISTEMATO.
+ANCHE LA FUNZIONE CHE INVIA IL FILE_DB DEVE AVVENIRE IN MODO ATOMICO
+
+
+8.SEG_FAULT:
+registro a b c luca
+entro con a
+invio messaggio:
+	luca
+	sei forte
+	porcoddio funziona
+logout di a
+login di luca
+leggi nuovi messaggi ->seg fault
 ******************************************************************************
 ****		FIXED BUGS		****
 ******************************************************************************
