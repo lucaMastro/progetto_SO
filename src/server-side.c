@@ -130,14 +130,21 @@ int main(int argc, char *argv[]){
 		exit(-1);
 	}	
 	printf("Server in ascolto sulla porta %d.\n", port_num);
-	
+
+/*	
 	//make a new hidden folder, if not exist
 	if (mkdir(".db", S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST){
-
-	//if (mkdir("db", 0040000) == -1 && errno != EEXIST){
 		perror("error creating < db >");
 		exit(EXIT_FAILURE);
 	}
+
+	//creating the list of users
+	fileid = open(".db/list.txt", O_CREAT|O_TRUNC, 0666);
+	if (fileid == -1)
+		error(142);
+	else
+		close(fileid);*/
+
 	
 
 new_accept:

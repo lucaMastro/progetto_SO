@@ -19,7 +19,7 @@
 
 
 void inizializza_server(message **mex_list){ //sequenza di messaggi
-	int i;
+	int i, fileid;
 
 	for (i = 0; i < MAX_NUM_MEX; i++){
 //		mex = mex_list[i];	
@@ -57,6 +57,20 @@ void inizializza_server(message **mex_list){ //sequenza di messaggi
 		
 		*(mex_list[i]-> position) = i;
 	}
+
+	//make a new hidden folder, if not exist
+        if (mkdir(".db", S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST){
+                perror("error creating < db >");
+                exit(EXIT_FAILURE);
+        }
+
+        //creating the list of users
+        fileid = open(".db/list.txt", O_CREAT|O_TRUNC, 0666);
+        if (fileid == -1)
+                error(142);
+        else
+                close(fileid);
+
 	return;
 }
 
@@ -315,10 +329,49 @@ is_read_op:
 
 
 
+void copy_db_file(char *deleting_string){
+	char string[MAX_USR_LEN + 1], del_string[MAX_USR_LEN + 1], c;
+	int fileid, fileid2, i;
+	
+	fileid = open(".db/list.txt", O_CREAT | O_RDWR, 0666);
+	if (fileid == -1)
+		error(7);
+	
+	fileid2 = open(".db/list2.txt", O_CREAT | O_TRUNC | O_RDWR | O_APPEND, 0666);
+	if (fileid2 == -1)
+		error(22);
+	
+	lseek(fileid, 0, SEEK_SET);
+	while (1){
+		bzero(string, MAX_USR_LEN);
+		i = 0;
+		c = '\0';
+		while (c != '\n'){
+			if (read(fileid, &c, 1) == -1){
+				perror("errore read");
+				exit(-1);
+			}
+			string[i] = c;
+			if (c == '\0')
+				break;
+			i++;
+		}
+		sprintf(del_string, "%s\n", deleting_string);
+		if (strcmp(string, del_string) != 0)
+			write(fileid2, string, i);
+		if (c == '\0'){
+			break;
+		}
+	}
+	system("rm .db/list.txt\nmv .db/list2.txt .db/list.txt");
+	close(fileid);
+	close(fileid2);
+}
+
 void managing_usr_registration_login(int acc_sock, char **usr){
-        int operation, len_usr, len_pw, i, ret, can_i_exit = 0;
+        int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
         char *pw, *file_name, stored_pw[MAX_PW_LEN + 1], is_log, curr;
-        int fileid;
+        int fileid, fileid2;
 
 check_operation:
 	bzero(stored_pw, MAX_PW_LEN + 1);
@@ -335,23 +388,36 @@ check_operation:
                 exit(EXIT_SUCCESS);
         }
         else{
+		/*	READING IF RETRY GETTING USRNAME	*/
+		check_usr_restart:
+		if (read_int(acc_sock, &retry, 344))
+			log_out(*usr);
 
-	/*	pw = malloc(sizeof(char) * MAX_PW_LEN);
-		if (pw == NULL)
-			error(694);
-		bzero(pw, MAX_PW_LEN);*/
-
+		switch (retry){
+			case 1:
+				goto check_usr_restart;
+			case 2:
+				goto check_operation;
+			default:
+				break;
+		}
                 /*      READING USR     */
                 if (read_string(acc_sock, usr, 944))
 			log_out(*usr);
+		
+		/*	READING IF RETRY GETTING PASSWORD	*/
+		check_pw_restart:
+		if (read_int(acc_sock, &retry, 344))
+			log_out(*usr);
 
-/*NON NECESSARIO: CONTROLLO FATTO CLIENT-SIDE.
-len_usr = strlen(*usr);
-if (len_usr > MAX_USR_LEN){
-printf("usrname too long\n");                       
-ret = 4;
-goto send_to_client;        
-}*/
+		switch (retry){
+			case 1: 
+				goto check_pw_restart;
+			case 2:
+				goto check_operation;
+			default:
+				break;
+		}
 
                 /*      READING PASSWORD        */
                 if (read_string(acc_sock, &pw, 958))
@@ -367,7 +433,7 @@ goto send_to_client;
                 sprintf(file_name, ".db/%s.txt", *usr);
 
                 if (operation == 1){
-                        printf("selected registration option.\nwating for data:");
+                        printf("selected registration option.\n");
                         //i have to sign in the username
                         if ((fileid = open(file_name, O_CREAT | O_APPEND | O_RDWR | O_EXCL, 0666)) == -1){
                                 if (errno == EEXIST){ //file gia esistente
@@ -380,6 +446,16 @@ goto send_to_client;
                         //ive created file. i have to write pw and a bit: default 0.
                         if (write(fileid, pw, len_pw) == -1 || write(fileid, "\n0", 2) == -1)
                                 error(885);
+			
+			//updating the list
+			fileid2 = open(".db/list.txt", O_CREAT|O_RDWR|O_APPEND, 0666);
+			if (fileid2 == -1)
+				error(439);
+//			printf("user = %s\n, len = %d\nbol = %d\n\n", *usr, len_usr, strcmp(*usr, "a\0"));
+			if (write(fileid2, *usr, strlen(*usr))  == -1 || write(fileid2, "\n", 1) == -1)
+				error(441);
+			close(fileid2);
+
                         printf("registrazione avvenuta.\n");
 
                         goto send_to_client;
@@ -674,6 +750,9 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 
         update_last(server, last);
 
+	/*	UPDATING LIST OF USERS	*/
+	copy_db_file(usr);
+
         /*UPDATING SEM VALUE*/
         sops.sem_op = 1;
         if (semop(sem_write, &sops, 1) == -1)
@@ -838,3 +917,4 @@ void store_mex(int sock, message **mex_list, int *position, int semid){
 	if (semop(semid, &sops, 1) == -1)
 		error(1386);
 }
+
