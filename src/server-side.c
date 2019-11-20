@@ -225,7 +225,6 @@ void *thread_func(void *sock_ds){
 		error(211);
 	
 	while(1){	
-		printf("thread: %p\n", message_list);
 		if (!managing_usr_registration_login(acc_sock, &client_usrname))
 			break;	
 		printf("\n\nlogin effettuato da: %s\n\n", client_usrname);

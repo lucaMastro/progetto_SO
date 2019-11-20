@@ -63,7 +63,6 @@ message** inizializza_server(){ //sequenza di messaggi
 			error(56);
 		*(mex_list[i]-> position) = i;
 	}
-	printf("mexlist 0 = %p\n", (mex_list[0]) -> usr_destination);
 	return mex_list;
 }
 
@@ -326,45 +325,59 @@ is_read_op:
 
 
 int managing_usr_registration_login(int acc_sock, char **usr){
-        int operation, len_usr, len_pw, i, ret, can_i_exit = 0;
+        int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
         char *pw, *file_name, stored_pw[MAX_PW_LEN + 1], is_log, curr;
-        int fileid;
+        int fileid, fileid2;
 
 check_operation:
-	bzero(stored_pw, MAX_PW_LEN + 1);
+        bzero(stored_pw, MAX_PW_LEN + 1);
         ret = 0;
         printf("waiting for an operation:\n");
         if (read_int(acc_sock, &operation, 931))
-		log_out(*usr);
+                log_out(*usr);
 
         printf("operation %d accepted\n", operation);
 
         if (operation == 0){
                 printf("selected exit option.\n");
-		return 0;
+
+                exit(EXIT_SUCCESS);
         }
         else{
+                /*      READING IF RETRY GETTING USRNAME        */
+                check_usr_restart:
+                if (read_int(acc_sock, &retry, 344))
+                        log_out(*usr);
 
-	/*	pw = malloc(sizeof(char) * MAX_PW_LEN);
-		if (pw == NULL)
-			error(694);
-		bzero(pw, MAX_PW_LEN);*/
-
+                switch (retry){
+                        case 1:
+                                goto check_usr_restart;
+                        case 2:
+                                goto check_operation;
+                        default:
+                                break;
+                }
                 /*      READING USR     */
                 if (read_string(acc_sock, usr, 944))
-			log_out(*usr);
+                        log_out(*usr);
 
-/*NON NECESSARIO: CONTROLLO FATTO CLIENT-SIDE.
-len_usr = strlen(*usr);
-if (len_usr > MAX_USR_LEN){
-printf("usrname too long\n");                       
-ret = 4;
-goto send_to_client;        
-}*/
+                /*      READING IF RETRY GETTING PASSWORD       */
+                check_pw_restart:
+                if (read_int(acc_sock, &retry, 344))
+                        log_out(*usr);
+
+                switch (retry){
+                        case 1:
+                                goto check_pw_restart;
+                        case 2:
+                                goto check_operation;
+                        default:
+                                break;
+                }
 
                 /*      READING PASSWORD        */
                 if (read_string(acc_sock, &pw, 958))
-			log_out(*usr);
+                        log_out(*usr);
 
                 len_pw = strlen(pw);
 
@@ -376,7 +389,7 @@ goto send_to_client;
                 sprintf(file_name, ".db/%s.txt", *usr);
 
                 if (operation == 1){
-                        printf("selected registration option.\nwating for data:");
+                        printf("selected registration option.\n");
                         //i have to sign in the username
                         if ((fileid = open(file_name, O_CREAT | O_APPEND | O_RDWR | O_EXCL, 0666)) == -1){
                                 if (errno == EEXIST){ //file gia esistente
@@ -389,6 +402,16 @@ goto send_to_client;
                         //ive created file. i have to write pw and a bit: default 0.
                         if (write(fileid, pw, len_pw) == -1 || write(fileid, "\n0", 2) == -1)
                                 error(885);
+
+                        //updating the list
+                        fileid2 = open(".db/list.txt", O_CREAT|O_RDWR|O_APPEND, 0666);
+                        if (fileid2 == -1)
+                                error(439);
+//                      printf("user = %s\n, len = %d\nbol = %d\n\n", *usr, len_usr, strcmp(*usr, "a\0"));
+                        if (write(fileid2, *usr, strlen(*usr))  == -1 || write(fileid2, "\n", 1) == -1)
+                                error(441);
+                        close(fileid2);
+
                         printf("registrazione avvenuta.\n");
 
                         goto send_to_client;
@@ -408,7 +431,7 @@ goto send_to_client;
 
                         /*      STARTING LOGIN PROCEDURE        */
                         lseek(fileid, 0, SEEK_SET); //to start
-                        for (i = 0; i < MAX_PW_LEN + 1; i++){
+			for (i = 0; i < MAX_PW_LEN + 1; i++){
                                 if (read(fileid, &curr, 1) == -1)
                                         error(907);
                                 if (curr == '\n')
@@ -417,7 +440,7 @@ goto send_to_client;
                                         stored_pw[i] = curr;
                         }
 
-		//	printf("pw = %s, stored = %s\n", pw, stored_pw);
+                //      printf("pw = %s, stored = %s\n", pw, stored_pw);
                         /*      CHECKING IF PW IS CORRECT       */
                         if (strcmp(stored_pw, pw) != 0){
                                 printf("no matching pw\n");
@@ -431,7 +454,7 @@ goto send_to_client;
 
                         if((atoi(&is_log)) == 1){
                                 printf("usr already logged\n");
-				ret = 3;
+                                ret = 3;
                                 goto send_to_client;
                         }
 
@@ -454,6 +477,7 @@ send_to_client:
                 goto check_operation;
         else
                 return 1;
+
 }
 
 
