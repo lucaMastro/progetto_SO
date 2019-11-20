@@ -14,15 +14,33 @@
 #include <sys/mman.h>
 #include <sys/sem.h>
 #include <sys/ipc.h>
+#include <pthread.h>
 
 #define MAX_LINES 1000
 
 int ParseCmdLine(int argc, char *argv[], char **szPort);
+void *thread_func(void *sock_ds);
+
+
+/*VARIABILI GLOBALI E TLS*/
 
 message **message_list;
+int position = 0; //puntatore alla posizione minima in cui salvare un messaggio
+int last = 0; //puntatore alla prossima posizione in cui memorizzare un messaggio.
+int sem_write; //write sem's: synchronizing write of mess, deleting
+int server[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = 0}; //bitmask for messages of server. it must be shared
+int sem_accept;
+
+__thread int acc_sock;
+__thread int my_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
+__thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
+
+/***********************************************************************************************************/
+
+
 
 void handler_sigint(){
-	//free(message_list);
+	free(message_list);
 	exit(EXIT_SUCCESS);
 }
 
@@ -31,23 +49,16 @@ void handler_sigpipe(){
 	exit(EXIT_SUCCESS);
 }
 
+
 int main(int argc, char *argv[]){
 	//porta come 1 parametro. aggiustare parsing
-	int sock_ds, acc_sock, ret, on = 1, i;
+	int sock_ds, ret, on = 1, i;
 	char *port, *client_usrname;
 	struct sockaddr_in server_addr, client_addr;
 	int server_len, client_len, port_num, operation;
 	ssize_t read_ch;
-	int *position; //puntatore alla posizione minima in cui salvare un messaggio
-	int *last; //puntatore alla prossima posizione in cui memorizzare un messaggio.
-	message *new_mess;
-       
-	int my_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
-	int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
-	int my_send_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX -1] = 0};
-	int *server; //bitmask for messages of server. it must be shared
-	int sem_write; //write sem's: synchronizing write of mess
-	
+	struct sembuf sops;
+	pthread_t tid;
 
 	printf("\e[1;1H\e[2J");	
 	ParseCmdLine(argc, argv, &port);
@@ -55,28 +66,6 @@ int main(int argc, char *argv[]){
 	
 
 	//INITIALIZING PARAMS
-	position = (int *) mmap(NULL, sizeof(position), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
-	if (position == (int*) -1){
-		perror("error initializing mex list");
-		exit(EXIT_FAILURE);		
-	}
-
-	*position = 0;
-
-	server = (int *) mmap(NULL, sizeof(int) * MAX_NUM_MEX, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
-	if (position == (int*) -1){
-		perror("error initializing mex list");
-		exit(EXIT_FAILURE);		
-	}
-	for (i = 0; i < MAX_NUM_MEX; i++)
-		server[i] = 0;
-
-	last = (int *) mmap(NULL, sizeof(position), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
-	if (last == (int*) -1){
-		perror("error initializing mex list");
-		exit(EXIT_FAILURE);		
-	}
-	*last = 0;
 	
 	sem_write = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666 );
 	if (sem_write == -1){
@@ -88,15 +77,33 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 
-
-
-	message_list = (message**) mmap(NULL, sizeof(*message_list) * MAX_NUM_MEX, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0);
-	if (message_list == (message**) -1){
-		perror("error initializing mex list");
+	/*sem_accept è il semaforo per gestire gli accept del main, in modo che i vari thread abbiano 
+	 * il tempo di copiare l'handler acc_sock nel loro TLS.
+	 * il semaforo è così strutturato: [sem_main, sem_threads]
+	 * inizialmente: [1, 0]
+	 * il mainthread sblocca il secondo semaforo, ogni thread sblocca il main. sono entrambi binari */
+	
+	sem_accept = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 );
+	if (sem_accept == -1){
+		perror("error initializing semaphore 2");
+		exit(EXIT_FAILURE);
+	}
+	if (semctl(sem_accept, 0, SETVAL, 1) == -1){
+		perror("error secmtl 2");
+		exit(EXIT_FAILURE);
+	}
+	if (semctl(sem_accept, 1, SETVAL, 0) == -1){
+		perror("error secmtl 2");
 		exit(EXIT_FAILURE);
 	}
 
-	inizializza_server(message_list);
+	/*message_list = malloc(sizeof(message) * MAX_NUM_MEX);
+	if (message_list == NULL){
+		perror("error initializing mex list");
+		exit(EXIT_FAILURE);
+	}*/
+
+	message_list = inizializza_server();
 	printf("struttura per gestione dei messaggi inizializzata\n");
 	
 	sock_ds = socket(AF_INET, SOCK_STREAM, 0);
@@ -106,10 +113,11 @@ int main(int argc, char *argv[]){
 		exit(-1);
 	}
 
+	//FORSE NON SERVE
 	if (setsockopt(sock_ds, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1){
 		perror("impossibile settare opzione");
 		exit(EXIT_FAILURE);		
-	}
+	}//end
 	
 	bzero((char*) &server_addr, sizeof(server_addr));
 	
@@ -130,53 +138,43 @@ int main(int argc, char *argv[]){
 		exit(-1);
 	}	
 	printf("Server in ascolto sulla porta %d.\n", port_num);
-
-/*	
+	
 	//make a new hidden folder, if not exist
 	if (mkdir(".db", S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST){
+
+	//if (mkdir("db", 0040000) == -1 && errno != EEXIST){
 		perror("error creating < db >");
 		exit(EXIT_FAILURE);
 	}
-
-	//creating the list of users
-	fileid = open(".db/list.txt", O_CREAT|O_TRUNC, 0666);
-	if (fileid == -1)
-		error(142);
-	else
-		close(fileid);*/
-
 	
 
-new_accept:
-	acc_sock = accept(sock_ds, (struct sockaddr*) &client_addr, &client_len); 
-//	printf("connessione avvenuta da parte dell'indirizzo %d\n", client_addr.sin_addr.s_addr);
-	printf("\nconnessione avvenuta\n");
+	sops.sem_flg = 0;
+	while(1){
+		sops.sem_num = 0;
+		sops.sem_op = -1;
+		if (semop(sem_accept, &sops, 1) == -1) //aspetto che l'ultimo thread creato copi il valore di acc_sock nel suo TLS
+			error(146);
 
-	if ( !fork() ){ //fork == 0, im a child;
-		
-		if (close(sock_ds) == -1){
-			perror("error in closing child socket");
-			exit(-1);
+		acc_sock = accept(sock_ds, (struct sockaddr*) &client_addr, &client_len); 
+		if (acc_sock < 0){
+			perror("error accepting\n");
+			exit(EXIT_FAILURE);
+		} 
+		printf("connessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
+	//	printf("\nconnessione avvenuta\n");
+	
+		if (pthread_create(&tid, NULL, thread_func, (void*) &acc_sock)){
+			perror("impossibile creare thread");
+			exit(EXIT_FAILURE);
 		}
-	
-/*		printf("\n\nRECEIVING TEST MESS:\n");
-		test_server_func(acc_sock);	*/
-	
-reg_log:
-		managing_usr_registration_login(acc_sock, &client_usrname);	
-		printf("\n\nlogin effettuato da: %s\n\n", client_usrname);
 
-		ret = managing_usr_menu(acc_sock, message_list, position, last, client_usrname, my_messages, my_new_messages, server, sem_write, client_usrname);
-		if (ret == 0)
-			goto reg_log;
+		sops.sem_op = 1; //sblocco uno dei thread creati per copiare il valore di acc_sock nel suo TLS
+		sops.sem_num = 1;
+		if (semop(sem_accept, &sops, 1) == -1)
+		       error(162);	
 	}
-	else{
-		if (close(acc_sock) == -1){
-			perror("error in closing parent socket");
-			exit(-1);
-		}
-		goto new_accept;
-	}
+	printf("exit from while\n");
+	
 }
 
 
@@ -206,4 +204,33 @@ int ParseCmdLine(int argc, char *argv[], char **szPort)
     return 0;
 }
 
+void *thread_func(void *sock_ds){
+			
+	char *client_usrname;
+	struct sembuf sops;
 
+	sops.sem_num = 1;
+	sops.sem_flg = 0;
+	sops.sem_op = -1;
+
+	if (semop(sem_accept, &sops, 1) == -1)
+		       error(204);
+	//now i can copy	
+	acc_sock = *((int *)sock_ds);	
+
+	//i have copied: i can accept another client
+	sops.sem_op = 1;
+	sops.sem_num = 0;
+	if (semop(sem_accept, &sops, 1) == -1)
+		error(211);
+	
+	while(1){	
+		printf("thread: %p\n", message_list);
+		if (!managing_usr_registration_login(acc_sock, &client_usrname))
+			break;	
+		printf("\n\nlogin effettuato da: %s\n\n", client_usrname);
+
+		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, &server, sem_write))
+			break;
+	}
+}

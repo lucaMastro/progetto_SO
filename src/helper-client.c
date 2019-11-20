@@ -185,41 +185,13 @@ usr_will:
 
 }
 
-void get_file_db(int sock_ds){
-	
-	char *buffer, *token;
-	int found;
-
-	buffer = malloc(sizeof(char) * (MAX_USR_LEN +1));
-	if (buffer == NULL)
-		error(195);
-
-	read_int(sock_ds, &found, 194);
-	while (found){
-		bzero(buffer, MAX_USR_LEN + 1);
-		read_string(sock_ds, &buffer, 197);
-		
-		token = strtok(buffer, "\n");
-		printf("%s ", token);
-
-		/* UPDATING IF FOUND */
-		read_int(sock_ds, &found, 194);
-	}
-
-	free(buffer);
-	return;
-}
-
-
 void invia_messaggio(int acc_sock, char *sender){
         char *destination, *obj, *mes;
         int len_dest, len_send, len_obj, len_mess, ret;
 
-	get_file_db(acc_sock);
 restart:
-	
         //GETTING DATA AND THEIR LEN
-	printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
+        printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
         if (scanf("%ms", &destination) == -1 && errno != EINTR)
                 error(470);
 
@@ -346,7 +318,7 @@ select_operation:
         switch (operation){
                 case 0:
                         printf("tornerai alla schermata di login fra 3 secondi. arrivederci :)\n");
-                        sleep(3);
+                        //sleep(3);
                         return 0;
                         break;
                 case 1:
@@ -400,7 +372,7 @@ select_operation:
 void usr_registration_login(int sock_ds, char **usr){
 //      printf("not implemented yet :)\n");
 
-        int ret, operation, len, retry;
+        int ret, operation, len;
         char *pw;
 
 portal:
@@ -435,6 +407,7 @@ portal:
                 printf("operazione non valida. premi un tasto per riprovare: ");
 		fflush(stdin);
                 goto portal;
+                exit(EXIT_FAILURE);
         }
 
 
@@ -447,24 +420,7 @@ portal:
         }
 
         //same structure for registration and login
-	//change menu view
-        printf("\e[1;1H\e[2J");
-
-	printf(".....................................................................................\n");
-	printf(".....................................................................................\n");
-	printf("................__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _..............\n");
-	printf("...............|                                                       |.............\n");
-	if (operation == 1) 
-		printf("...............|                 GESTORE REGISTRAZIONE                 |.............\n");
-	else
-		printf("...............|                     GESTORE LOGIN                     |.............\n");
-	printf("...............|__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _|.............\n");
-	printf(".....................................................................................\n");
-	printf(".....................................................................................\n");
-	printf(".....................................................................................\n\n");	
-
 get_usr:
-	retry = 0;
         printf("inserisci username (max %d caratteri):\n", MAX_USR_LEN);
         if (scanf("%s", *usr) == -1 && errno != EINTR)
                 error(756);
@@ -473,79 +429,27 @@ get_usr:
 
         len = strlen(*usr);
         if (len > MAX_USR_LEN){
-
-        	printf("\n...........................Errore: username troppo lungo.............................\n");
-        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
-	        printf("|                                                                                    |\n");
-	        printf("|   1. Inserire un nuovo username                    				     |\n");
-	        printf("|   2. Annullare e tornare al menu iniziale                                    	     |\n");
-	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-                printf("quale operazione vuoi svolgere?\n");
-get_op:
-        	if (scanf("%d", &retry) == -1 && errno != EINTR)
-                	error(732);
-
-        	fflush(stdin);
-
-	        switch (retry){
-			case 1:
-      				write_int(sock_ds, retry, 463);
-				goto get_usr;
-				break;
-			case 2: 
-      				write_int(sock_ds, retry, 467);
-				goto portal;
-				break;
-			default:
-				printf("operazione non valida. premi un tasto per riprovare: ");
-				fflush(stdin);
-				goto get_op;
-				break;
-	        }
-	}
-	
-      	write_int(sock_ds, retry, 463);
+                printf("usrname too long. try again:\n");
+                goto get_usr;
+        }
+      //  write_int(sock_ds, len, 431);
+               
         write_string(sock_ds, *usr, 433);
-
-get_pw:
-	retry = 0;
+pw_get:
         printf("inserisci password (max %d caratteri):\n", MAX_PW_LEN);
         if (scanf("%ms", &pw) == -1 && errno != EINTR)
                 error(772);
-        fflush(stdin);
 
         len = strlen(pw);
         if (len > MAX_PW_LEN){
-        	printf("\n...........................Errore: password troppo lunga.............................\n");
-        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
-	        printf("|                                                                                    |\n");
-	        printf("|   1. Inserire una nuova password                    				     |\n");
-	        printf("|   2. Annullare e tornare al menu iniziale                                    	     |\n");
-	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-                printf("quale operazione vuoi svolgere?\n");
-get_op1:
-        	if (scanf("%d", &retry) == -1 && errno != EINTR)
-                	error(732);
-
-        	fflush(stdin);
-	        switch (retry){
-
-			case 1:
-      				write_int(sock_ds, retry, 503);
-				goto get_pw;
-			case 2: 
-      				write_int(sock_ds, retry, 507);
-				goto portal;
-			default:
-				printf("operazione non valida. premi un tasto per riprovare: ");
-				fflush(stdin);
-				goto get_op1;
-	        }
+                printf("password too long. try again:\n");
+                goto pw_get;
         }
-//      fflush(stdin);
+        fflush(stdin);
 
-      	write_int(sock_ds, retry, 522);
-        write_string(sock_ds, pw, 523);
+        //write_int(sock_ds, len, 445);
+
+        write_string(sock_ds, pw, 447);
 
         //reading response:
         read_int(sock_ds, &ret, 879);
@@ -596,10 +500,10 @@ void close_client(int sock_ds){
 
         close(sock_ds);
         printf("l'applicazione si chiuderà in 3 secondi. arrivederci :)\n");
-        if (!sleep(3)){
+        /*if (!sleep(3)){
                 printf("\e[1;1H\e[2J");
-                exit(EXIT_SUCCESS);
-        }
+        }*/
+	exit(EXIT_SUCCESS);
 }
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi

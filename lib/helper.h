@@ -7,7 +7,6 @@
 #define MAX_OBJ_LEN 20
 #define MAX_MESS_LEN 100
 #define MAX_CIFRE 5
-//#define MAX_NUM_USR 20
 
 typedef struct MESSAGE{
         char *usr_destination;

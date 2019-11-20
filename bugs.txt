@@ -1,30 +1,17 @@
 
 2. in caso di password o usrname troppo lunga, dare possibilità di annullare.
 fare refactory, magari con visuale
-	-modificare %ms in %m[^\n]
-	-modificare il messaggio di errore: password "troppo lunga.riprova" in "vuoi riprovare?" e accettare da tastiera cosa fare, inserendo opportunamente la grafica
-
 
 3. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
 
+4. ctrl c funge all'inizio
+
 5. campo text vuoto, capitato una volta nel cercare i casi di segfault con invio
 
-6. dopo elimina account viene eseguito logout (?)
-
-7. POICHÈ HO CREATO IL FILE LIST, LISTA DI UTENTI, LA REGISTRAZIONE DEVE AVVENIRE IN MODO ATOMICO: USARE IL SOLITO SEMAFORO. PER LE CANCELLAZIONI È GIÀ SISTEMATO.
-ANCHE LA FUNZIONE CHE INVIA IL FILE_DB DEVE AVVENIRE IN MODO ATOMICO
+6. server-side: registrazione con usrname già presente manca uno \n "waiting for data"
 
 
-8.SEG_FAULT:
-registro a b c luca
-entro con a
-invio messaggio:
-	luca
-	sei forte
-	porcoddio funziona
-logout di a
-login di luca
-leggi nuovi messaggi ->seg fault
+
 ******************************************************************************
 ****		FIXED BUGS		****
 ******************************************************************************
@@ -60,11 +47,3 @@ leggi nuovi messaggi ->seg fault
 	-gestore letture, operazione 0: inserimento del messaggio
 		----> fixed aggiungendo spazio prima di "%m[^\n]":
 			scanf(" %m[^\n]", &string);
-
-
-- ctrl c funge all'inizio. 
-		----> spostato il signal
-
-
-- server-side: registrazione con usrname già presente manca uno \n "waiting for data"
-		----> rimosso completamente il waiting

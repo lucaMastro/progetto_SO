@@ -17,86 +17,54 @@
 #define audit printf("ok\n")
 
 
-void send_file_db(int acc_sock){
-	FILE *fd;
-	char buffer[MAX_USR_LEN + 1], *ret;
-	int found;
 
-	fd = fopen(".db/list.txt", "r");
-	if (fd == NULL)
-		error(378);
-	
-	while (1){
-		found = 1;
-		bzero(buffer, MAX_USR_LEN + 1); 
-		ret = fgets(buffer, MAX_USR_LEN + 1, fd);
-		if (ret == NULL)
-			break;
-		write_int(acc_sock, found, 383);
-		write_string(acc_sock, buffer, 385);
-	}
+message** inizializza_server(){ //sequenza di messaggi
+	int i;
+	message **mex_list;
+//	message *mex;
 
-	found = 0;
-	write_int(acc_sock, found, 383);
-	fclose(fd);
-}
-
-
-
-void inizializza_server(message **mex_list){ //sequenza di messaggi
-	int i, fileid;
+	mex_list = (message**) malloc(sizeof(message) * MAX_NUM_MEX);
+	if (mex_list == NULL){
+		perror("error initializing mex list");
+		exit(EXIT_FAILURE);
+       	}
 
 	for (i = 0; i < MAX_NUM_MEX; i++){
-//		mex = mex_list[i];	
-		//sharing mex
-		if ((mex_list[i] = (message*) mmap(NULL, (sizeof(message)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (message*) -1)
-			error(42);
+	//	mex = mex_list[i];
+	       	
+		mex_list[i] = (message*) malloc(sizeof(message));
+		if (mex_list[i] == NULL)
+			error(27);
 		
-		//sharing usr_destination
-		if ((mex_list[i] -> usr_destination = (char*) mmap(NULL, (sizeof(char) * MAX_USR_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			error(46);
-		}	bzero(mex_list[i] -> usr_destination, MAX_USR_LEN);
+		if ((mex_list[i] -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+			error(33);	
+		bzero(mex_list[i] -> usr_destination, MAX_USR_LEN);
 
-		//sharing usr_sender
-		if ((mex_list[i] -> usr_sender = (char*) mmap(NULL, (sizeof(char) * MAX_USR_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			error(51);
-		}	bzero(mex_list[i] -> usr_sender, MAX_USR_LEN);
+		if ((mex_list[i] -> usr_sender = (char*) malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+			error(37);	
+		bzero(mex_list[i] -> usr_sender, MAX_USR_LEN);
 
-		//sharing object
-		if ((mex_list[i] -> object = (char*) mmap(NULL, (sizeof(char) * MAX_OBJ_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
+		if ((mex_list[i] -> object =  (char*) malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
+			error(41);	
+		bzero(mex_list[i] -> object, MAX_OBJ_LEN);
+
+		if ((mex_list[i] -> text =  (char*) malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
+			error(45);	
+		bzero(mex_list[i] -> text, MAX_MESS_LEN);
+
+		if ((mex_list[i] -> text =  (char*) malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
+			error(49);	
+		bzero(mex_list[i] -> text, MAX_MESS_LEN);
+		
+		if ((mex_list[i] -> is_new = (int *) malloc(sizeof(int))) == NULL)
+			error(53);
+
+		if ((mex_list[i] -> position = (int*) malloc(sizeof(int))) == NULL)
 			error(56);
-		}	bzero(mex_list[i] -> object, MAX_OBJ_LEN);
-
-		//sharing text
-		if ((mex_list[i]-> text = (char*) mmap(NULL, (sizeof(char) * MAX_MESS_LEN), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (char*) -1){
-			error(61);
-		}	bzero(mex_list[i] -> text, MAX_MESS_LEN);
-	
-		//sharing is_new 
-		if ((mex_list[i]-> is_new = (int*) mmap(NULL, (sizeof(int)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (int*) -1)
-			error(66);
-	
-		//sharing position 
-		if ((mex_list[i]-> position = (int*) mmap(NULL, (sizeof(int*)), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, 0, 0)) == (int*) -1)
-			error(70);
-		
 		*(mex_list[i]-> position) = i;
 	}
-
-	//make a new hidden folder, if not exist
-        if (mkdir(".db", S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST){
-                perror("error creating < db >");
-                exit(EXIT_FAILURE);
-        }
-
-        //creating the list of users
-        fileid = open(".db/list.txt", O_CREAT|O_TRUNC, 0666);
-        if (fileid == -1)
-                error(142);
-        else
-                close(fileid);
-
-	return;
+	printf("mexlist 0 = %p\n", (mex_list[0]) -> usr_destination);
+	return mex_list;
 }
 
 
@@ -112,8 +80,6 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	sops.sem_op = -1;
 
 start:
-
-	send_file_db(acc_sock);
 
 	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
@@ -133,7 +99,6 @@ start:
 		else
 			return 1;
 	}
-
 	/*	READING USR_SENDER	*/
 	if (read_string(acc_sock, &usr_sender, 231))
 		log_out(client_usr);
@@ -152,11 +117,13 @@ start:
 
 	message *mex = mess_list[*position];
 
+	audit;
 	/*sprintf((mex -> usr_destination), "%s", usr_destination);
 	sprintf((mex ->usr_sender), "%s", usr_sender);
 	sprintf((mex -> object), "%s", object);
 	sprintf((mex -> text), "%s", text);*/
 	strcpy((mex -> usr_destination), usr_destination);
+	audit;
 	strcpy((mex ->usr_sender), usr_sender);
 	strcpy((mex -> object), object);
 	strcpy((mex -> text), text);
@@ -268,11 +235,11 @@ read_usr_will:
 
 
 
-int managing_usr_menu(int acc_sock, message **message_list, int *position, int *last, char *usr, int *my_mex, int *my_new_mex, int *server, int sem_write, char *client_usrname){
+int managing_usr_menu(int acc_sock, message **message_list, int *position, int *last, char *client_usrname, int *my_mex, int *my_new_mex, int *server, int sem_write){
 
         int operation = 0, ret, flag = 0;
         //checking for update
-        ret = update_system_state(my_mex, my_new_mex, message_list, usr, *last, server);
+        ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
         //sending ret
         write_int(acc_sock, ret, 714);
 
@@ -296,18 +263,18 @@ int managing_usr_menu(int acc_sock, message **message_list, int *position, int *
                 printf("inserita l'operazione %d\n", operation);
                 switch (operation){
                         case 0:
-                                log_out(usr);
+                                log_out(client_usrname);
                                 return 0;
                         case 1:
                                 flag = 0;
 is_read_op:
-                                ret = gestore_letture(acc_sock, message_list, last, usr, flag, my_mex, my_new_mex, server, sem_write, position);
+                                ret = gestore_letture(acc_sock, message_list, last, client_usrname, flag, my_mex, my_new_mex, server, sem_write, position);
                                 if (ret >= 0)
                                         printf("messaggi consegnati con successo\n");
                                 else
                                         printf("errore consegna\n");
 
-                                ret = update_system_state(my_mex, my_new_mex, message_list, usr, *last, server);
+                                ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
                                 //sending if updated:
                                 write_int(acc_sock, ret, 249);
                                 break;
@@ -317,7 +284,7 @@ is_read_op:
 
                         case 3:
 
-                                ret = ricevi_messaggio(acc_sock, message_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 0);
+                                ret = ricevi_messaggio(acc_sock, message_list, position, last, server, sem_write, my_mex, my_new_mex, client_usrname, 0);
                                 if (ret >= 0)
                                         printf("messaggio ricevuto con successo\n");
                                 else
@@ -331,22 +298,24 @@ is_read_op:
                                 break;
 
                         case 4:
-                                ret = gestore_eliminazioni(acc_sock, usr, message_list, my_mex, my_new_mex, server, sem_write, position, last);
+                                ret = gestore_eliminazioni(acc_sock, client_usrname, message_list, my_mex, my_new_mex, server, sem_write, position, last);
                                 break;
 
                         case 5:
-                                ret = update_system_state(my_mex, my_new_mex, message_list, usr, *last, server);
+                                ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
                                 write_int(acc_sock, ret, sizeof(ret));
                                 printf("stato aggiornato.\n");
                                 break;
                         case 6:
-                                log_out(usr);
-                                close_server(acc_sock, usr);
+                                log_out(client_usrname);
+                                close_server(acc_sock, client_usrname);
+				return 1;
                         case 7:
-                                delete_user(acc_sock, usr, message_list, server, my_mex, last, position, sem_write);
-                                close_server(acc_sock, usr);
+                                delete_user(acc_sock, client_usrname, message_list, server, my_mex, last, position, sem_write);
+                                close_server(acc_sock, client_usrname);
+				return 1;
                         case 8:
-                                mng_cambio_pass(acc_sock, usr);
+                                mng_cambio_pass(acc_sock, client_usrname);
                                 break;
                         default:
                                 break;
@@ -356,50 +325,10 @@ is_read_op:
 
 
 
-void update_db_file(char *deleting_string){
-	char string[MAX_USR_LEN + 1], del_string[MAX_USR_LEN + 1], c;
-	int fileid, fileid2, i;
-	
-	fileid = open(".db/list.txt", O_CREAT | O_RDWR, 0666);
-	if (fileid == -1)
-		error(7);
-	
-	fileid2 = open(".db/list2.txt", O_CREAT | O_TRUNC | O_RDWR | O_APPEND, 0666);
-	if (fileid2 == -1)
-		error(22);
-	
-	lseek(fileid, 0, SEEK_SET);
-	while (1){
-		bzero(string, MAX_USR_LEN);
-		i = 0;
-		c = '\0';
-		while (c != '\n'){
-			if (read(fileid, &c, 1) == -1){
-				perror("errore read");
-				exit(-1);
-			}
-			string[i] = c;
-			if (c == '\0')
-				break;
-			i++;
-		}
-		sprintf(del_string, "%s\n", deleting_string);
-		if (strcmp(string, del_string) != 0)
-			write(fileid2, string, i);
-		if (c == '\0'){
-			break;
-		}
-	}
-	system("rm .db/list.txt\nmv .db/list2.txt .db/list.txt");
-	close(fileid);
-	close(fileid2);
-}
-
-
-void managing_usr_registration_login(int acc_sock, char **usr){
-        int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
+int managing_usr_registration_login(int acc_sock, char **usr){
+        int operation, len_usr, len_pw, i, ret, can_i_exit = 0;
         char *pw, *file_name, stored_pw[MAX_PW_LEN + 1], is_log, curr;
-        int fileid, fileid2;
+        int fileid;
 
 check_operation:
 	bzero(stored_pw, MAX_PW_LEN + 1);
@@ -412,40 +341,26 @@ check_operation:
 
         if (operation == 0){
                 printf("selected exit option.\n");
-
-                exit(EXIT_SUCCESS);
+		return 0;
         }
         else{
-		/*	READING IF RETRY GETTING USRNAME	*/
-		check_usr_restart:
-		if (read_int(acc_sock, &retry, 344))
-			log_out(*usr);
 
-		switch (retry){
-			case 1:
-				goto check_usr_restart;
-			case 2:
-				goto check_operation;
-			default:
-				break;
-		}
+	/*	pw = malloc(sizeof(char) * MAX_PW_LEN);
+		if (pw == NULL)
+			error(694);
+		bzero(pw, MAX_PW_LEN);*/
+
                 /*      READING USR     */
                 if (read_string(acc_sock, usr, 944))
 			log_out(*usr);
-		
-		/*	READING IF RETRY GETTING PASSWORD	*/
-		check_pw_restart:
-		if (read_int(acc_sock, &retry, 344))
-			log_out(*usr);
 
-		switch (retry){
-			case 1: 
-				goto check_pw_restart;
-			case 2:
-				goto check_operation;
-			default:
-				break;
-		}
+/*NON NECESSARIO: CONTROLLO FATTO CLIENT-SIDE.
+len_usr = strlen(*usr);
+if (len_usr > MAX_USR_LEN){
+printf("usrname too long\n");                       
+ret = 4;
+goto send_to_client;        
+}*/
 
                 /*      READING PASSWORD        */
                 if (read_string(acc_sock, &pw, 958))
@@ -461,7 +376,7 @@ check_operation:
                 sprintf(file_name, ".db/%s.txt", *usr);
 
                 if (operation == 1){
-                        printf("selected registration option.\n");
+                        printf("selected registration option.\nwating for data:");
                         //i have to sign in the username
                         if ((fileid = open(file_name, O_CREAT | O_APPEND | O_RDWR | O_EXCL, 0666)) == -1){
                                 if (errno == EEXIST){ //file gia esistente
@@ -474,16 +389,6 @@ check_operation:
                         //ive created file. i have to write pw and a bit: default 0.
                         if (write(fileid, pw, len_pw) == -1 || write(fileid, "\n0", 2) == -1)
                                 error(885);
-			
-			//updating the list
-			fileid2 = open(".db/list.txt", O_CREAT|O_RDWR|O_APPEND, 0666);
-			if (fileid2 == -1)
-				error(439);
-//			printf("user = %s\n, len = %d\nbol = %d\n\n", *usr, len_usr, strcmp(*usr, "a\0"));
-			if (write(fileid2, *usr, strlen(*usr))  == -1 || write(fileid2, "\n", 1) == -1)
-				error(441);
-			close(fileid2);
-
                         printf("registrazione avvenuta.\n");
 
                         goto send_to_client;
@@ -548,7 +453,7 @@ send_to_client:
         if (!can_i_exit)//registration option completed
                 goto check_operation;
         else
-                return;
+                return 1;
 }
 
 
@@ -563,7 +468,6 @@ void close_server(int acc_sock, char *usr){
         printf("starting log out\n");
 //      log_out(usr);   
         printf("collegamento chiuso con successo.\n");
-        exit(EXIT_SUCCESS);
 }
 
 
@@ -778,9 +682,6 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 
         update_last(server, last);
 
-	/*	UPDATING LIST OF USERS	*/
-	update_db_file(usr);
-
         /*UPDATING SEM VALUE*/
         sops.sem_op = 1;
         if (semop(sem_write, &sops, 1) == -1)
@@ -945,4 +846,3 @@ void store_mex(int sock, message **mex_list, int *position, int semid){
 	if (semop(semid, &sops, 1) == -1)
 		error(1386);
 }
-

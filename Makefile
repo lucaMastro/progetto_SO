@@ -17,7 +17,7 @@ all: clean $(CLIENT) $(SERVER)
 	cp a.txt .db
 
 $(SERVER): $(H).o $(HS).o $(SERVER).o 
-	gcc -o $(SERVER) $(H).o $(HS).o src/$(SERVER).o 
+	gcc -o $(SERVER) $(H).o $(HS).o -pthread src/$(SERVER).o 
 
 $(SERVER).o: 
 	gcc -o src/$(SERVER).o $(SSRC) -c
