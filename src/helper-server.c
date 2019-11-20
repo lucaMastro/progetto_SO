@@ -36,7 +36,7 @@ message** inizializza_server(){ //sequenza di messaggi
 		if (mex_list[i] == NULL)
 			error(27);
 		
-		if ((mex_list[i] -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+		if ((mex_list[i] -> usr_destination = (char*) malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
 			error(33);	
 		bzero(mex_list[i] -> usr_destination, MAX_USR_LEN);
 
