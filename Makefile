@@ -13,8 +13,7 @@ HSSRC	= src/helper-server.c
 HCSRC	= src/helper-client.c
 
 all: clean $(CLIENT) $(SERVER)
-	rm .db/a.txt
-	cp a.txt .db
+	rm -rf .db/
 
 $(SERVER): $(H).o $(HS).o $(SERVER).o 
 	gcc -o $(SERVER) $(H).o $(HS).o -pthread src/$(SERVER).o 
