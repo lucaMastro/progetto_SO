@@ -112,48 +112,45 @@ int read_int(int sock, int *num, int line){
 
 
 int get_mex(int sock, message *mex){ //store the sent mex in mex
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6, i = 0;
-	int isnew, position;
-	char *sender, object, text;
-	char *one_string, *token;
 
+	int i = 0;
+	char *one_string, *token;
+	
 	read_string(sock, &one_string, 88);
 
 	/*PARSING*/
-	//isnew
 	token = strtok(one_string, "\037");
-	isnew = atoi(token);
-	if ((mex -> is_new = malloc(sizeof(int))) == NULL)
-		error(39);
-	*(mex -> is_new) = isnew;
-	
-	//printf("00. %p\n%p\n\n", mex -> is_new, token);
+
+	if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+		error(30);
+	bzero(mex -> usr_sender, MAX_USR_LEN);
+	strcpy(mex -> usr_sender, token);
+
 	while ((token = strtok(NULL, "\037")) != NULL){
-		printf("%d. %p\n", i, mex -> is_new);
 		switch(i){
 			case 0:
-				if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-					error(30);
-		  		bzero(mex -> usr_sender, MAX_USR_LEN);
-				strcpy(mex -> usr_sender, token);
-				break;
-			case 1:
-				 if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-		 			 error(27);
-				bzero(mex -> usr_destination, MAX_USR_LEN);
-				strcpy(mex -> usr_destination, token);
-				break;
-			case 2:
-		                if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
+				if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
 					error(33);
 				bzero(mex -> object, MAX_OBJ_LEN);
 				strcpy(mex -> object, token);
 				break;
-			case 3:
+			case 1:
 				if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
 					error(36);
 				bzero(mex -> text, MAX_MESS_LEN);
 				strcpy(mex -> text, token);
+				break;
+			case 2:
+				if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+					error(27);
+				bzero(mex -> usr_destination, MAX_USR_LEN);
+				strcpy(mex -> usr_destination, token);
+				break;
+        
+			case 3:
+				if ((mex -> is_new = malloc(sizeof(int))) == NULL)
+					error(39);
+				*(mex -> is_new) = atoi(token);
 				break;
 			case 4:
 				if ((mex -> position = malloc(sizeof(int))) == NULL)
@@ -164,22 +161,21 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 				break;
 		}
 		i++;
-		//printf("\ttoken: %s, len = %d\n", token, strlen(token));
-		//printf("\n");
 	}
-	return isnew;
 }
+
 
 void send_mex(int sock, message *mex){
 	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6;
 	char one_string[max_len];
 
 	bzero(one_string, max_len);
-//	stampa_messaggio(mex);
-	/*	isnew, sender, destination, object, text, position	*/
-	sprintf(one_string, "%d\037%s\037%s\037%s\037%s\037%d", *(mex -> is_new), mex -> usr_sender, mex -> usr_destination, mex -> object, mex -> text, *(mex -> position));
+	stampa_messaggio(mex);
+	/*	sender, object, text, destination, is_new, position	*/
+	printf("%s\n", mex -> usr_destination);
+	sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination, *(mex -> is_new), *(mex -> position));
 	
 	//printf("%s\n", one_string);	
-	//printf("lem = %d\n", strlen(one_string));
+//	printf("cmp = %d\n", strcmp(one_string, "a\037a\0371\037a\0371\0370"));
 	write_string(sock, one_string, 1433);
 }

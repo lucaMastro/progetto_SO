@@ -149,14 +149,12 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	send_file_db(acc_sock);
 start:
 
-	//audit;//NON STAMPA	
 	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
 		return -1;
 
 	len = strlen(usr_destination);
 
-//	printf("usr dest = %s, len = %d\n", usr_destination, len);
 
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
 	exist = check_destination(&usr_destination, NULL);	
@@ -240,27 +238,29 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         
                         found = 1;
 
-			/*	SENDING MEX	*/
-			//send_mex(acc_sock, mex);
-			
+
                         /*WRITING FOUND*/
                         write_int(acc_sock, found, 710);
 			
-		       	/*WRITING IS_NEW*/
+			/*	SENDING MEX	*/
+			send_mex(acc_sock, mex);
+/*
+			sleep(5);
+		       	/*WRITING IS_NEW
                         write_int(acc_sock, *(mex -> is_new), 714);
 
-                        /*WRITING SENDER*/
+                        /*WRITING SENDER
                         write_string(acc_sock, mex -> usr_sender, 718);
 
-                        /*WRITING OBJECT*/
+                        /*WRITING OBJECT
                         write_string(acc_sock, mex -> object, 723);
 
-                        /*WRITING TEXT*/
+                        /*WRITING TEXT
                         write_string(acc_sock, mex -> text, 727);
 
-                        /*WRITING POSITION*/
+                        /*WRITING POSITION/
                         write_int(acc_sock, i, 731); //*(mex -> position), 731);
-		
+		*/
 
                         *(mex -> is_new) = 0;
                         found = 0;

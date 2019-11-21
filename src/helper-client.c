@@ -71,61 +71,8 @@ start:
 		if (leave)
 			break;
 
-         //       isnew = get_mex(sock_ds, mex);
- /*READING IS_NEW*/
-		
-	//	stampa_messaggio(mex);
-	//	sleep(5);
-		read_int(sock_ds, &isnew, 101);			
+                isnew = get_mex(sock_ds, mex);
 
-//		printf("hel-client: isnew = %d\n", isnew);
-		/*CHECKING IS_NEW*/
-//                if (!isnew && flag)//controllo già fatto serverside
-  //                      goto start;
-
-		/*READING SENDER*/
-                read_string(sock_ds, &sender, 108);
-                /*READING OBJECT*/
-                read_string(sock_ds, &object, 112);
-                /*READING TEXT*/
-                read_string(sock_ds, &text, 116);
-                /*READING POSITION*/
-                read_int(sock_ds, &pos, 119);
-
-		audit;
-	        if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-			error(30);
-		bzero(mex -> usr_sender, MAX_USR_LEN);
-		strcpy(mex -> usr_sender, sender);
-
-		audit;
-	        if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
-			error(33);
-		bzero(mex -> object, MAX_OBJ_LEN);
-		strcpy(mex -> object, object);
-
-		audit;
-	        if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
-			error(36);
-		bzero(mex -> text, MAX_MESS_LEN);
-		strcpy(mex -> text, text);
-
-		audit;
-	        if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-                	error(27);
-		bzero(mex -> usr_destination, MAX_USR_LEN);
-		strcpy(mex -> usr_destination, my_usrname);
-
-		audit;
-	        if ((mex -> is_new = malloc(sizeof(int))) == NULL)
-			error(39);
-		*(mex -> is_new) = isnew;
-
-		audit;
-	        if ((mex -> position = malloc(sizeof(int))) == NULL)
-			error(42);
-		*(mex -> position) = pos;
-		audit;
 
                 /*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
@@ -229,7 +176,7 @@ void invia_messaggio(int acc_sock, char *sender){
         int len_dest, len_send, len_obj, len_mess, ret;
 
 	get_file_db(acc_sock);
-
+	printf("\n");
 restart:
         //GETTING DATA AND THEIR LEN
         printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
