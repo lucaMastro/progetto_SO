@@ -82,8 +82,8 @@ start:
 
 	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
-		log_out(client_usr);
-		
+		return -1;
+
 	len = strlen(usr_destination);
 
 //	printf("usr dest = %s, len = %d\n", usr_destination, len);
@@ -100,15 +100,15 @@ start:
 	}
 	/*	READING USR_SENDER	*/
 	if (read_string(acc_sock, &usr_sender, 231))
-		log_out(client_usr);
+		return -1;
 
 	/*	READING OBJECT	*/
 	if (read_string(acc_sock, &object, 235))
-		log_out(client_usr);
-
+		return -1;
+	
 	/*	READING TEXT	*/
 	if (read_string(acc_sock, &text, 238))
-		log_out(client_usr);
+		return -1;
 
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
@@ -116,13 +116,11 @@ start:
 
 	message *mex = mess_list[*position];
 
-	audit;
 	/*sprintf((mex -> usr_destination), "%s", usr_destination);
 	sprintf((mex ->usr_sender), "%s", usr_sender);
 	sprintf((mex -> object), "%s", object);
 	sprintf((mex -> text), "%s", text);*/
 	strcpy((mex -> usr_destination), usr_destination);
-	audit;
 	strcpy((mex ->usr_sender), usr_sender);
 	strcpy((mex -> object), object);
 	strcpy((mex -> text), text);
@@ -199,7 +197,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 			/*READING USR_WILL*/
 read_usr_will:
                         if (read_int(acc_sock, &op, 613))
-				log_out(usr);
+				return -1;
                         
 			switch(op){
 				case 0:
@@ -256,8 +254,10 @@ int managing_usr_menu(int acc_sock, message **message_list, int *position, int *
                 stampa_bitmask(server, *last);
 
                 printf("\nwaiting for an operation:\n");
-                if (read_int(acc_sock, &operation, 693))
+                if (read_int(acc_sock, &operation, 693)){
 			log_out(client_usrname);
+			return 1;
+		}
 
                 printf("inserita l'operazione %d\n", operation);
                 switch (operation){
@@ -270,8 +270,11 @@ is_read_op:
                                 ret = gestore_letture(acc_sock, message_list, last, client_usrname, flag, my_mex, my_new_mex, server, sem_write, position);
                                 if (ret >= 0)
                                         printf("messaggi consegnati con successo\n");
-                                else
-                                        printf("errore consegna\n");
+                                else{
+                                	log_out(client_usrname);
+                                	close_server(acc_sock, client_usrname);
+					return 1;
+				}
 
                                 ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
                                 //sending if updated:
@@ -286,9 +289,12 @@ is_read_op:
                                 ret = ricevi_messaggio(acc_sock, message_list, position, last, server, sem_write, my_mex, my_new_mex, client_usrname, 0);
                                 if (ret >= 0)
                                         printf("messaggio ricevuto con successo\n");
-                                else
-                                        printf("errore ricezione\n");
-				
+                                else{
+					log_out(client_usrname);
+                                	close_server(acc_sock, client_usrname);
+					return 1;
+				}
+
 				//sending if it was ok
                                 write_int(acc_sock, ret, sizeof(ret));
 
@@ -298,6 +304,11 @@ is_read_op:
 
                         case 4:
                                 ret = gestore_eliminazioni(acc_sock, client_usrname, message_list, my_mex, my_new_mex, server, sem_write, position, last);
+				if (ret < 0){
+                                	log_out(client_usrname);
+                                	close_server(acc_sock, client_usrname);
+					return 1;
+				}
                                 break;
 
                         case 5:
@@ -314,7 +325,11 @@ is_read_op:
                                 close_server(acc_sock, client_usrname);
 				return 1;
                         case 8:
-                                mng_cambio_pass(acc_sock, client_usrname);
+                                ret = mng_cambio_pass(acc_sock, client_usrname);
+				if (ret < 0){
+                                	close_server(acc_sock, client_usrname);
+					return 1;
+				}
                                 break;
                         default:
                                 break;
@@ -333,8 +348,10 @@ check_operation:
         bzero(stored_pw, MAX_PW_LEN + 1);
         ret = 0;
         printf("waiting for an operation:\n");
-        if (read_int(acc_sock, &operation, 931))
-                log_out(*usr);
+        if (read_int(acc_sock, &operation, 931)){
+		close_server(acc_sock, *usr);
+		return 0;
+	}
 
         printf("operation %d accepted\n", operation);
 
@@ -346,8 +363,10 @@ check_operation:
         else{
                 /*      READING IF RETRY GETTING USRNAME        */
                 check_usr_restart:
-                if (read_int(acc_sock, &retry, 344))
-                        log_out(*usr);
+                if (read_int(acc_sock, &retry, 344)){
+			close_server(acc_sock, *usr);
+			return 0;
+		}
 
                 switch (retry){
                         case 1:
@@ -358,14 +377,17 @@ check_operation:
                                 break;
                 }
                 /*      READING USR     */
-                if (read_string(acc_sock, usr, 944))
-                        log_out(*usr);
+                if (read_string(acc_sock, usr, 944)){
+			close_server(acc_sock, *usr);
+			return 0;
+		}
 
                 /*      READING IF RETRY GETTING PASSWORD       */
                 check_pw_restart:
-                if (read_int(acc_sock, &retry, 344))
-                        log_out(*usr);
-
+                if (read_int(acc_sock, &retry, 344)){
+			close_server(acc_sock, *usr);
+			return 0;
+		}
                 switch (retry){
                         case 1:
                                 goto check_pw_restart;
@@ -376,8 +398,10 @@ check_operation:
                 }
 
                 /*      READING PASSWORD        */
-                if (read_string(acc_sock, &pw, 958))
-                        log_out(*usr);
+                if (read_string(acc_sock, &pw, 958)){
+			close_server(acc_sock, *usr);
+			return 0;
+		}
 
                 len_pw = strlen(pw);
 
@@ -486,11 +510,11 @@ send_to_client:
 
 
 void close_server(int acc_sock, char *usr){
-        if (close(acc_sock) == -1)
+      if (close(acc_sock) == -1)
                 error(693);
 
-        printf("starting log out\n");
-//      log_out(usr);   
+//        printf("starting log out\n");
+  //  	log_out(usr);   
         printf("collegamento chiuso con successo.\n");
 }
 
@@ -562,7 +586,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
         /*READ MODE*/
         if (read_int(acc_sock, &mode, 369))
-		log_out(usr);
+		return -1;
 
         if (mode >= 0)
 	 	code = mode;
@@ -570,7 +594,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
         else{
                 another_code:
                 if (read_int(acc_sock, &code, 374))
-			log_out(usr);
+			return -1;
 	}
 
       //printf("code = %d\n", code);
@@ -632,7 +656,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
         if (mode < 0){
                 if (read_int(acc_sock, &again, 444))
-			log_out(usr);
+			return -1;
 
                 if (again)
                         goto another_code;
@@ -762,7 +786,7 @@ int check_destination(char **usr_destination, char **dest){
 
 
 
-void mng_cambio_pass(int acc_sock, char *my_usr){
+int mng_cambio_pass(int acc_sock, char *my_usr){
         int exist, len, fileid, pw_len, ret = 0;
         char *dest_file, *new_pw;
 
@@ -778,7 +802,7 @@ void mng_cambio_pass(int acc_sock, char *my_usr){
 	bzero(new_pw, MAX_PW_LEN);*/
 
         if (read_string(acc_sock, &new_pw, 1548))
-		log_out(my_usr);
+		return -1;
 
         pw_len = strlen(new_pw);
 	printf("pw_len = %d\n", pw_len);
@@ -809,6 +833,7 @@ exit_lab:
         write_int(acc_sock, ret, 1572);
         if (!ret)
                 exit(EXIT_FAILURE);
+	return 0;
 }
 
 

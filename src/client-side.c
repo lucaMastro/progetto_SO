@@ -96,11 +96,7 @@ int main(int argc, char *argv[]){
 	
 	printf("\e[1;1H\e[2J");	
 	printf("connessione al server riuscita.\npremi INVIO per continuare.\n");
-	while(getchar() != '\n') {};
-	
-	/*printf("\n\nSENDING TEST MESS:\n");
-	test_client_func(sock_ds);*/
-
+	fflush(stdin);
 
 reg_log:
 	usr_registration_login(sock_ds, &my_usrname);

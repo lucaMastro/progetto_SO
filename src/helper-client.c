@@ -12,14 +12,19 @@
 #include <sys/mman.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <signal.h>
 
 #define fflush(stdin) while(getchar() != '\n')
 #define audit printf("ok\n")
 
-/*void handler_ign(int signo){
+int handler_sock;
+
+void handler(int signo){
+	int n = MAX_NUM_MEX + 1;
 	printf("\n");
-	sigignore(signo);
-}*/
+	write_int(handler_sock, n, 23);
+	exit(EXIT_SUCCESS);
+}
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
@@ -260,6 +265,7 @@ int usr_menu(int sock_ds, char *my_usrname){
 
         int operation, new_mex_avaiable, check_upd = 1, code = -1, ret;
 
+	signal(SIGINT, handler);
 select_operation:
 
         printf("\n\nlogin effettuato come: %s\n\n", my_usrname);
@@ -375,6 +381,8 @@ void usr_registration_login(int sock_ds, char **usr){
         int ret, operation, len, retry;
         char *pw;
 
+	handler_sock = sock_ds;
+	signal(SIGINT, handler);
 portal:
         printf("\e[1;1H\e[2J");
 

@@ -227,6 +227,7 @@ void *thread_func(void *sock_ds){
 	while(1){	
 		if (!managing_usr_registration_login(acc_sock, &client_usrname))
 			break;	
+		
 		printf("\n\nlogin effettuato da: %s\n\n", client_usrname);
 
 		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, &server, sem_write))

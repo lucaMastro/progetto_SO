@@ -13,5 +13,5 @@ void update_last(int *server, int *last);
 int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *my_mex, int *last, int *position, int sem_write);
 int check_destination(char **usr_destination, char **dest);
 void server_test(int acc_sock, message **mex_list, int *position, int semid);
-void mng_cambio_pass(int acc_sock, char *my_usr);
+int mng_cambio_pass(int acc_sock, char *my_usr);
 void log_out(char *usr);

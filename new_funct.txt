@@ -13,3 +13,7 @@ idee:
 	un nuovo utente si registra come a
 	b legge il messaggio e risponde
 	il messaggio arriva al nuovo b
+
+
+
+aggiustare quando si da ctrl+c: aggiungere printf sul lato server che dicano cosa sia successo.

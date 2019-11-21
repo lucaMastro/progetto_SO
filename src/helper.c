@@ -55,21 +55,16 @@ void write_string(int sock, char *string, int line){
 int read_string(int sock, char **string, int line){
 	int len;
 
-	read_int(sock, &len, 58);
-	/*if (read(sock, &len, sizeof(len)) == -1)
-		error(1182);*/
+	if (read_int(sock, &len, 58))
+		return 1;
 	
-//	printf("***READ_STRING: len %d\n", len);	
 	if ((*string = malloc(sizeof(char) * (len+1))) == NULL)
 		error(62);
 	bzero(*string, len+1);
-//	printf("string: %s.\n", *string);
+	
 	if ( (len = read(sock, *string, len)) == -1)
 		error(line);
-//	printf("ho letto %d caratteri\n", len);
-//	printf("string: %s\n", *string);
-	if (atoi(*string) == MAX_NUM_MEX + 1)
-		return 1;
+
 	return 0;
 }
 
