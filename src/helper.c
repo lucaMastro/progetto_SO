@@ -41,11 +41,13 @@ void stampa_messaggio(message *mess){
 
 void write_string(int sock, char *string, int line){
 	int len = strlen(string);
-	
+//	printf("len = %d\n", len);
+
 	/*if (write(sock, &len, sizeof(len)) == -1)
 		error(1172);*/
 
 	write_int(sock, len, line);
+	//audit;
 //	printf("***WRITE STRING: %s.\n\n", string);
 
 	if (write(sock, string, len) == -1)
@@ -79,9 +81,11 @@ void write_int(int sock, int num, int line){;
 	bzero(str_num, MAX_CIFRE);
 
 	sprintf(str_num, "%d", num);
-//	printf("\n***WRITE INT: string_v: %s. int_v: %d\n", str_num, num);
+//	printf("\n***WRITE INT: string_v: %s. int_v: %d, len = %d\n", str_num, num, strlen(str_num));
+
 	if (write(sock, str_num, MAX_CIFRE) == -1)
 		error(line);
+//	audit;
 	free(str_num);
 }
 
@@ -108,7 +112,9 @@ int read_int(int sock, int *num, int line){
 
 
 int get_mex(int sock, message *mex){ //store the sent mex in mex
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6, i = 0, isnew;
+	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6, i = 0;
+	int isnew, position;
+	char *sender, object, text;
 	char *one_string, *token;
 
 	read_string(sock, &one_string, 88);
@@ -117,25 +123,42 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 	//isnew
 	token = strtok(one_string, "\037");
 	isnew = atoi(token);
+	if ((mex -> is_new = malloc(sizeof(int))) == NULL)
+		error(39);
 	*(mex -> is_new) = isnew;
-	printf("00. %p\n%p\n\n", mex -> is_new, token);
+	
+	//printf("00. %p\n%p\n\n", mex -> is_new, token);
 	while ((token = strtok(NULL, "\037")) != NULL){
 		printf("%d. %p\n", i, mex -> is_new);
 		switch(i){
 			case 0:
+				if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+					error(30);
+		  		bzero(mex -> usr_sender, MAX_USR_LEN);
 				strcpy(mex -> usr_sender, token);
 				break;
 			case 1:
-				//strcpy(mex -> usr_destination, token);
+				 if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+		 			 error(27);
+				bzero(mex -> usr_destination, MAX_USR_LEN);
+				strcpy(mex -> usr_destination, token);
 				break;
 			case 2:
+		                if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
+					error(33);
+				bzero(mex -> object, MAX_OBJ_LEN);
 				strcpy(mex -> object, token);
 				break;
 			case 3:
+				if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
+					error(36);
+				bzero(mex -> text, MAX_MESS_LEN);
 				strcpy(mex -> text, token);
 				break;
 			case 4:
-				//*(mex -> position) = atoi(token);
+				if ((mex -> position = malloc(sizeof(int))) == NULL)
+					error(42);
+				*(mex -> position) = atoi(token);
 				break;
 			default:
 				break;

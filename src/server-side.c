@@ -15,6 +15,7 @@
 #include <sys/sem.h>
 #include <sys/ipc.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #define MAX_LINES 1000
 
@@ -26,7 +27,7 @@ void *thread_func(void *sock_ds);
 
 message **message_list;
 int position = 0; //puntatore alla posizione minima in cui salvare un messaggio
-int last = 0; //puntatore alla prossima posizione in cui memorizzare un messaggio.
+int fileid, last = 0; //puntatore alla prossima posizione in cui memorizzare un messaggio.
 int sem_write; //write sem's: synchronizing write of mess, deleting
 int server[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = 0}; //bitmask for messages of server. it must be shared
 int sem_accept;
@@ -146,6 +147,12 @@ int main(int argc, char *argv[]){
 		perror("error creating < db >");
 		exit(EXIT_FAILURE);
 	}
+	//creating the list of users
+        fileid = open(".db/list.txt", O_CREAT|O_TRUNC, 0666);
+        if (fileid == -1)
+                error(142);
+        else
+                close(fileid);
 	
 
 	sops.sem_flg = 0;

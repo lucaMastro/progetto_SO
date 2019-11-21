@@ -17,9 +17,76 @@
 #define audit printf("ok\n")
 
 
+void send_file_db(int acc_sock){
+	FILE *fd;
+	char buffer[MAX_USR_LEN + 1], *ret;
+	int found;
+
+	fd = fopen(".db/list.txt", "r");
+	if (fd == NULL)
+		error(378);
+	while (1){
+		found = 1;
+		bzero(buffer, MAX_USR_LEN + 1); 
+		ret = fgets(buffer, MAX_USR_LEN + 1, fd);
+		if (ret == NULL)
+			break;
+		write_int(acc_sock, found, 383);
+		//audit;
+		printf("buf = %s, %p\n", buffer, buffer);
+		write_string(acc_sock, buffer, 385);
+		//audit;
+	}
+
+	found = 0;
+	write_int(acc_sock, found, 383);
+	fclose(fd);
+	//audit;
+}
+
+
+void update_db_file(char *deleting_string){
+	char string[MAX_USR_LEN + 1], del_string[MAX_USR_LEN + 1], c;
+	int fileid, fileid2, i;
+
+	fileid = open(".db/list.txt", O_CREAT | O_RDWR, 0666);
+	if (fileid == -1)
+		error(7);
+
+	fileid2 = open(".db/list2.txt", O_CREAT | O_TRUNC | O_RDWR | O_APPEND, 0666);
+	if (fileid2 == -1)
+		error(22);
+
+	lseek(fileid, 0, SEEK_SET);
+	while (1){
+		bzero(string, MAX_USR_LEN);
+		i = 0;
+		c = '\0';
+		while (c != '\n'){
+			if (read(fileid, &c, 1) == -1){
+				perror("errore read");
+				exit(-1);
+			}
+			string[i] = c;
+			if (c == '\0')
+				break;
+			i++;
+		}
+		sprintf(del_string, "%s\n", deleting_string);
+		if (strcmp(string, del_string) != 0)
+			write(fileid2, string, i);
+		if (c == '\0'){
+			break;
+		}
+	}
+	system("rm .db/list.txt\nmv .db/list2.txt .db/list.txt");
+	close(fileid);
+	close(fileid2);
+}
+
 
 message** inizializza_server(){ //sequenza di messaggi
-	int i;
+	int i, fileid;
 	message **mex_list;
 //	message *mex;
 
@@ -63,6 +130,7 @@ message** inizializza_server(){ //sequenza di messaggi
 			error(56);
 		*(mex_list[i]-> position) = i;
 	}
+	
 	return mex_list;
 }
 
@@ -78,8 +146,10 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	sops.sem_num = 0;
 	sops.sem_op = -1;
 
+	send_file_db(acc_sock);
 start:
 
+	//audit;//NON STAMPA	
 	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
 		return -1;
@@ -170,6 +240,9 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         
                         found = 1;
 
+			/*	SENDING MEX	*/
+			//send_mex(acc_sock, mex);
+			
                         /*WRITING FOUND*/
                         write_int(acc_sock, found, 710);
 			
@@ -188,8 +261,6 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         /*WRITING POSITION*/
                         write_int(acc_sock, i, 731); //*(mex -> position), 731);
 		
-			/*	SENDING MEX	*/
-		//	send_mex(acc_sock, mex);
 
                         *(mex -> is_new) = 0;
                         found = 0;
@@ -357,8 +428,7 @@ check_operation:
 
         if (operation == 0){
                 printf("selected exit option.\n");
-
-                exit(EXIT_SUCCESS);
+		return 0;
         }
         else{
                 /*      READING IF RETRY GETTING USRNAME        */
@@ -638,6 +708,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 else
                         update_position(position, server, *last);
 
+
                 /*UPDATING SEM VALUE*/
                 sops.sem_op = 1;
                 if (semop(sem_write, &sops, 1) == -1)
@@ -729,6 +800,7 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
         }
 
         update_last(server, last);
+	update_db_file(usr);
 
         /*UPDATING SEM VALUE*/
         sops.sem_op = 1;

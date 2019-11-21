@@ -19,6 +19,32 @@
 
 int handler_sock;
 
+
+void get_file_db(int sock_ds){
+
+	char *buffer, *token;
+	int found;
+
+	buffer = malloc(sizeof(char) * (MAX_USR_LEN +1));
+	if (buffer == NULL)
+		error(195);
+
+	read_int(sock_ds, &found, 194);
+	while (found){
+		bzero(buffer, MAX_USR_LEN + 1);
+		read_string(sock_ds, &buffer, 197);
+
+		token = strtok(buffer, "\n");
+		printf("%s ", token);
+
+		/* UPDATING IF FOUND */
+		read_int(sock_ds, &found, 194);
+	}
+
+	free(buffer);
+	return;
+}
+
 void handler(int signo){
 	int n = MAX_NUM_MEX + 1;
 	printf("\n");
@@ -31,30 +57,9 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
         int found, again = 1, isnew, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0, pos; 
         char *sender, *object, *text;
         message *mex;
-        if ((mex = malloc(sizeof(mex))) == NULL)
+  
+  	if ((mex = malloc(sizeof(mex))) == NULL)
                 error(24);
-
-        if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-                error(27);
-	bzero(mex -> usr_destination, MAX_USR_LEN);
-
-        if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-		error(30);
-	bzero(mex -> usr_destination, MAX_USR_LEN);
-	
-        if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
-		error(33);
-	bzero(mex -> usr_destination, MAX_OBJ_LEN);
-
-        if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
-		error(36);
-	bzero(mex -> usr_destination, MAX_MESS_LEN);
-
-        if ((mex -> is_new = malloc(sizeof(int))) == NULL)
-		error(39);
-
-        if ((mex -> position = malloc(sizeof(int))) == NULL)
-		error(42);
 start:
         
 	read_int(sock_ds, &found, 95);
@@ -66,16 +71,17 @@ start:
 		if (leave)
 			break;
 
-//                isnew = get_mex(sock_ds, mex);
+         //       isnew = get_mex(sock_ds, mex);
  /*READING IS_NEW*/
-
-
-		read_int(sock_ds, &isnew, 101);		
 		
-		//printf("hel-client: isnew = %d\n", *(mex -> is_new));
+	//	stampa_messaggio(mex);
+	//	sleep(5);
+		read_int(sock_ds, &isnew, 101);			
+
+//		printf("hel-client: isnew = %d\n", isnew);
 		/*CHECKING IS_NEW*/
-                if (!isnew && flag)
-                        goto start;
+//                if (!isnew && flag)//controllo già fatto serverside
+  //                      goto start;
 
 		/*READING SENDER*/
                 read_string(sock_ds, &sender, 108);
@@ -86,12 +92,40 @@ start:
                 /*READING POSITION*/
                 read_int(sock_ds, &pos, 119);
 
+		audit;
+	        if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+			error(30);
+		bzero(mex -> usr_sender, MAX_USR_LEN);
 		strcpy(mex -> usr_sender, sender);
+
+		audit;
+	        if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
+			error(33);
+		bzero(mex -> object, MAX_OBJ_LEN);
 		strcpy(mex -> object, object);
+
+		audit;
+	        if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
+			error(36);
+		bzero(mex -> text, MAX_MESS_LEN);
 		strcpy(mex -> text, text);
+
+		audit;
+	        if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+                	error(27);
+		bzero(mex -> usr_destination, MAX_USR_LEN);
 		strcpy(mex -> usr_destination, my_usrname);
+
+		audit;
+	        if ((mex -> is_new = malloc(sizeof(int))) == NULL)
+			error(39);
 		*(mex -> is_new) = isnew;
+
+		audit;
+	        if ((mex -> position = malloc(sizeof(int))) == NULL)
+			error(42);
 		*(mex -> position) = pos;
+		audit;
 
                 /*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
@@ -193,6 +227,8 @@ usr_will:
 void invia_messaggio(int acc_sock, char *sender){
         char *destination, *obj, *mes;
         int len_dest, len_send, len_obj, len_mess, ret;
+
+	get_file_db(acc_sock);
 
 restart:
         //GETTING DATA AND THEIR LEN
