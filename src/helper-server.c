@@ -32,16 +32,12 @@ void send_file_db(int acc_sock){
 		if (ret == NULL)
 			break;
 		write_int(acc_sock, found, 383);
-		//audit;
-		printf("buf = %s, %p\n", buffer, buffer);
 		write_string(acc_sock, buffer, 385);
-		//audit;
 	}
 
 	found = 0;
 	write_int(acc_sock, found, 383);
 	fclose(fd);
-	//audit;
 }
 
 
@@ -99,32 +95,17 @@ message** inizializza_server(){ //sequenza di messaggi
 	for (i = 0; i < MAX_NUM_MEX; i++){
 	//	mex = mex_list[i];
 	       	
+		/*alloco solo l'indirizzo del messaggio, isnew, e position:
+		 *  sono gli unici campi che lato client non mi vengono inviati, 
+		 *  per cui nella funzione get_mex non verranno parsati. tutti
+		 *  gli altri campi, invece, vengono parsati da quella e funzione
+		 *  e, in quel momento, allocati.	*/
 		mex_list[i] = (message*) malloc(sizeof(message));
 		if (mex_list[i] == NULL)
 			error(27);
-		
-		if ((mex_list[i] -> usr_destination = (char*) malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-			error(33);	
-		bzero(mex_list[i] -> usr_destination, MAX_USR_LEN);
-
-		if ((mex_list[i] -> usr_sender = (char*) malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-			error(37);	
-		bzero(mex_list[i] -> usr_sender, MAX_USR_LEN);
-
-		if ((mex_list[i] -> object =  (char*) malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
-			error(41);	
-		bzero(mex_list[i] -> object, MAX_OBJ_LEN);
-
-		if ((mex_list[i] -> text =  (char*) malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
-			error(45);	
-		bzero(mex_list[i] -> text, MAX_MESS_LEN);
-
-		if ((mex_list[i] -> text =  (char*) malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
-			error(49);	
-		bzero(mex_list[i] -> text, MAX_MESS_LEN);
-		
 		if ((mex_list[i] -> is_new = (int *) malloc(sizeof(int))) == NULL)
 			error(53);
+		*(mex_list[i] -> is_new) = 1;
 
 		if ((mex_list[i] -> position = (int*) malloc(sizeof(int))) == NULL)
 			error(56);
@@ -145,16 +126,14 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	sops.sem_flg = 0;
 	sops.sem_num = 0;
 	sops.sem_op = -1;
-
-	send_file_db(acc_sock);
+	
+	if (!flag)
+		send_file_db(acc_sock);
 start:
 
 	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
 		return -1;
-
-	len = strlen(usr_destination);
-
 
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
 	exist = check_destination(&usr_destination, NULL);	
@@ -166,34 +145,13 @@ start:
 		else
 			return 1;
 	}
-	/*	READING USR_SENDER	*/
-	if (read_string(acc_sock, &usr_sender, 231))
-		return -1;
-
-	/*	READING OBJECT	*/
-	if (read_string(acc_sock, &object, 235))
-		return -1;
-	
-	/*	READING TEXT	*/
-	if (read_string(acc_sock, &text, 238))
-		return -1;
-
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
 
 	message *mex = mess_list[*position];
+	get_mex(acc_sock, mex, 0);
 
-	/*sprintf((mex -> usr_destination), "%s", usr_destination);
-	sprintf((mex ->usr_sender), "%s", usr_sender);
-	sprintf((mex -> object), "%s", object);
-	sprintf((mex -> text), "%s", text);*/
-	strcpy((mex -> usr_destination), usr_destination);
-	strcpy((mex ->usr_sender), usr_sender);
-	strcpy((mex -> object), object);
-	strcpy((mex -> text), text);
-	*(mex -> is_new) = 1;
-	
 	server[*position] = 1;
 
         /*      UPDATING SHARED PARAMS  */
@@ -210,7 +168,6 @@ start:
         sops.sem_op = 1;
         if (semop(sem_write, &sops, 1) == -1)
                 error(290);
-//	stampa_messaggio(mex);
 	return 0;
 }
 
@@ -243,7 +200,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         write_int(acc_sock, found, 710);
 			
 			/*	SENDING MEX	*/
-			send_mex(acc_sock, mex);
+			send_mex(acc_sock, mex, 1);
 /*
 			sleep(5);
 		       	/*WRITING IS_NEW
@@ -289,11 +246,9 @@ read_usr_will:
 			}
 		}
         }
-        if (i == temp_last && leave == 0){
-	//	printf("i = %d\ntl = %d\n", i, temp_last);
+        if (i == temp_last && leave == 0)
                 write_int(acc_sock, found, 615);
-	//	printf("wrote\n");
-	}
+	
 
         return ret;
 }
@@ -581,7 +536,7 @@ send_to_client:
 
 void close_server(int acc_sock, char *usr){
       if (close(acc_sock) == -1)
-                error(693);
+                error(541);
 
 //        printf("starting log out\n");
   //  	log_out(usr);   
@@ -691,9 +646,16 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
                 /*START EMPTYNG MESSAGE*/
                 mex = mex_list[code];
-                bzero(mex -> usr_destination, strlen(mex -> usr_destination));
-                bzero(mex -> usr_sender, strlen(mex -> usr_destination));
-                bzero(mex -> text, strlen(mex -> usr_destination));
+/*                bzero(mex -> usr_destination, strlen(mex -> usr_destination));
+                bzero(mex -> usr_sender, strlen(mex -> usr_sender));
+                bzero(mex -> object, strlen(mex -> object));
+                bzero(mex -> text, strlen(mex -> text));*/
+		
+                free(mex -> usr_destination);
+                free(mex -> usr_sender);
+                free(mex -> object);
+                free(mex -> text);
+		*(mex -> is_new) = 1;
 
                 /*START UPDATING BITMASKS*/
                 server[code] = 0;
@@ -942,9 +904,9 @@ void log_out(char *usr){
 
 
 
-
+/*
 void store_mex(int sock, message **mex_list, int *position, int semid){ 
-	/*store the mex in the correct position of the server's struct	*/
+	/*store the mex in the correct position of the server's struct	
 
 	struct sembuf sops;
 
@@ -958,7 +920,7 @@ void store_mex(int sock, message **mex_list, int *position, int semid){
 	
 	message *mex = mex_list[*position];
 
-	/*	STORING MEX IN THE CORRECT POSITION OF MEX_LIST	*/
+	/*	STORING MEX IN THE CORRECT POSITION OF MEX_LIST	
 	get_mex(sock, mex);
 
 	//	GIVE CONTROL TO OTHERS	
@@ -966,4 +928,4 @@ void store_mex(int sock, message **mex_list, int *position, int semid){
 	sops.sem_op = 1;
 	if (semop(semid, &sops, 1) == -1)
 		error(1386);
-}
+}*/

@@ -111,7 +111,7 @@ int read_int(int sock, int *num, int line){
 }
 
 
-int get_mex(int sock, message *mex){ //store the sent mex in mex
+int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex in mex
 
 	int i = 0;
 	char *one_string, *token;
@@ -120,7 +120,6 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 
 	/*PARSING*/
 	token = strtok(one_string, "\037");
-
 	if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
 		error(30);
 	bzero(mex -> usr_sender, MAX_USR_LEN);
@@ -148,14 +147,18 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 				break;
         
 			case 3:
-				if ((mex -> is_new = malloc(sizeof(int))) == NULL)
-					error(39);
-				*(mex -> is_new) = atoi(token);
+				if (alloca_position){
+					if ((mex -> is_new = malloc(sizeof(int))) == NULL)
+						error(39);
+					*(mex -> is_new) = atoi(token);
+				}
 				break;
 			case 4:
-				if ((mex -> position = malloc(sizeof(int))) == NULL)
-					error(42);
-				*(mex -> position) = atoi(token);
+				if (alloca_position){
+					if ((mex -> position = malloc(sizeof(int))) == NULL)
+						error(42);
+					*(mex -> position) = atoi(token);
+				}
 				break;
 			default:
 				break;
@@ -165,17 +168,20 @@ int get_mex(int sock, message *mex){ //store the sent mex in mex
 }
 
 
-void send_mex(int sock, message *mex){
+void send_mex(int sock, message *mex, int invia_is_new_and_position){
 	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6;
 	char one_string[max_len];
 
 	bzero(one_string, max_len);
-	stampa_messaggio(mex);
+//	stampa_messaggio(mex);
 	/*	sender, object, text, destination, is_new, position	*/
-	printf("%s\n", mex -> usr_destination);
-	sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination, *(mex -> is_new), *(mex -> position));
+	if (invia_is_new_and_position)
+		sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination, *(mex -> is_new), *(mex -> position));
+	
+	else
+		sprintf(one_string, "%s\037%s\037%s\037%s\037", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination);	
 	
 	//printf("%s\n", one_string);	
-//	printf("cmp = %d\n", strcmp(one_string, "a\037a\0371\037a\0371\0370"));
+	//printf("cmp = %d\n", strcmp(one_string, "a\037RE: a\037asd\037a"));
 	write_string(sock, one_string, 1433);
 }

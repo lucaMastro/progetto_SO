@@ -58,8 +58,6 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
         char *sender, *object, *text;
         message *mex;
   
-  	if ((mex = malloc(sizeof(mex))) == NULL)
-                error(24);
 start:
         
 	read_int(sock_ds, &found, 95);
@@ -71,8 +69,10 @@ start:
 		if (leave)
 			break;
 
-                isnew = get_mex(sock_ds, mex);
-
+  		if ((mex = malloc(sizeof(mex))) == NULL)
+                	error(24);
+		
+                isnew = get_mex(sock_ds, mex, 1);
 
                 /*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
@@ -145,9 +145,10 @@ usr_will:
 				leave = 1;
 				break;
                 }
-		
-		if (!leave) //updating found
+		free(mex);
+		if (!leave){ //updating found
 			read_int(sock_ds, &found, 156);
+		}
 	}
 	
         if (!leave){
@@ -166,7 +167,6 @@ usr_will:
 	                }
         	}
 	}
-        free(mex);
         return 0;
 
 }
@@ -174,53 +174,24 @@ usr_will:
 void invia_messaggio(int acc_sock, char *sender){
         char *destination, *obj, *mes;
         int len_dest, len_send, len_obj, len_mess, ret;
+	message *mex;
 
 	get_file_db(acc_sock);
 	printf("\n");
+
+	if ((mex = malloc(sizeof(message))) == NULL)
+		error(183);
+
 restart:
         //GETTING DATA AND THEIR LEN
         printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
-        if (scanf("%ms", &destination) == -1 && errno != EINTR)
+        if (scanf("%ms", &(mex -> usr_destination)) == -1 && errno != EINTR)
                 error(470);
 
         fflush(stdin);
 
-        len_dest = strlen(destination);
-        if (len_dest > MAX_USR_LEN){
-                printf("usrname destinatario inserito troppo lungo. per favore riprova.\n\n");
-                goto restart;
-        }
-
-        //its len was checked at login/registration act
-        len_send = strlen(sender);
-
-        printf("inserisci l'oggetto del messaggio (max %d caratteri):\n", MAX_OBJ_LEN);
-        if (scanf(" %m[^\n]", &obj) == -1 && errno != EINTR)
-                error(485);
-
-        fflush(stdin);
-
-        len_obj = strlen(obj);
-        if (len_obj > MAX_OBJ_LEN){
-                printf("oggetto inserito troppo lungo. per favore riprova.\n\n");
-                goto restart;
-        }
-
-        printf("inserisci il testo del messaggio: (max %d caratteri):\n", MAX_MESS_LEN);
-        if (scanf(" %m[^\n]", &mes) == -1 && errno != EINTR)
-                error(497);
-        fflush(stdin);
-
-        len_mess = strlen(mes);
-        if (len_mess > MAX_MESS_LEN){
-                printf("messaggio inserito troppo lungo. per favore riprova.\n\n");
-                goto restart;
-        }
-
-        //SENDING DATA
-
         //invio destinatario
-        write_string(acc_sock, destination, 633);
+        write_string(acc_sock, mex -> usr_destination, 633);
 
         //reading response if destination exists:
         read_int(acc_sock, &ret, 539);
@@ -230,18 +201,43 @@ restart:
                 goto restart;
         }
 
-        //invio mio usrname
-        write_string(acc_sock, sender, 646);
+        len_dest = strlen(mex -> usr_destination);
+        if (len_dest > MAX_USR_LEN){
+                printf("usrname destinatario inserito troppo lungo. per favore riprova.\n\n");
+                goto restart;
+        }
 
-        //invio oggetto
-        write_string(acc_sock, obj, 649);
+	mex -> usr_sender = sender;
 
-        //invio mess
-        write_string(acc_sock, mes, 652);
+        printf("inserisci l'oggetto del messaggio (max %d caratteri):\n", MAX_OBJ_LEN);
+        if (scanf(" %m[^\n]", &(mex -> object)) == -1 && errno != EINTR)
+                error(485);
+
+        fflush(stdin);
+
+        len_obj = strlen(mex -> object);
+        if (len_obj > MAX_OBJ_LEN){
+                printf("oggetto inserito troppo lungo. per favore riprova.\n\n");
+                goto restart;
+        }
+
+        printf("inserisci il testo del messaggio: (max %d caratteri):\n", MAX_MESS_LEN);
+        if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
+                error(497);
+        fflush(stdin);
+
+        len_mess = strlen(mex -> text);
+        if (len_mess > MAX_MESS_LEN){
+                printf("messaggio inserito troppo lungo. per favore riprova.\n\n");
+                goto restart;
+        }
+
+        //SENDING DATA
+	send_mex(acc_sock, mex, 0);
 
         printf("\n\ninvio del messaggio avvenuto con successo. attendo conferma ricezione...\n");
 
-
+	free(mex);
 }
 
 int usr_menu(int sock_ds, char *my_usrname){
@@ -250,7 +246,6 @@ int usr_menu(int sock_ds, char *my_usrname){
 
 	signal(SIGINT, handler);
 select_operation:
-
         printf("\n\nlogin effettuato come: %s\n\n", my_usrname);
 
         if (check_upd){
@@ -667,47 +662,40 @@ exit_lab:
 int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         char *text, *re_obj;
         int len = strlen(object), ret;
-
+	message *mex;
 
 	//invio destinatario
         write_string(sock_ds, usr_dest, 1296);
-
         //reading response if destination exists:
         read_int(sock_ds, &ret, 1299);
-
         if (!ret){
                 printf("destinatario non più esistente.");
                 return 0;
         }
 
-        //invio mio usrname
-        write_string(sock_ds, my_usr, 1307);
+	if ((mex = malloc(sizeof(message))) == NULL)
+		error(680);
 
+	mex -> usr_sender = my_usr;
+	mex -> usr_destination = usr_dest;
         /*CREATING THE STRING:  RE: <object>    */
-        if ((re_obj = malloc(sizeof(char) * (len + 4))) == NULL)
+        if ((mex -> object = malloc(sizeof(char) * (len + 4))) == NULL)
                 error(1226);
+        bzero(mex -> object, len + 4);
 
-        bzero(re_obj, len + 4);
-
-        sprintf(re_obj, "RE: %s", object);
+        sprintf(mex -> object, "RE: %s", object);
 
         /*GETTING THE TEXT FROM USR*/
         printf("inserisci il messaggio:\n");
-        if (scanf(" %m[^\n]", &text) == -1 && errno != EINTR)
+        if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
                 error(1235);
 
         fflush(stdin);
 
         /*SENDING MEX*/
+	send_mex(sock_ds, mex, 0);
 
-        //invio oggetto
-        write_string(sock_ds, re_obj, 1329);
-
-        //invio text
-        write_string(sock_ds, text, 1332);
-
-	free(re_obj);	
-	free(text);
+	free(mex);
         return 1;
 }
 

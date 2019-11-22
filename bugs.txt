@@ -6,7 +6,9 @@
 
 6. server-side: registrazione con usrname già presente manca uno \n "waiting for data"
 
+7. non aggiorna my_new_mex quando il messaggio va nella casella di un messaggio precedentemente cancellato
 
+8. sui "premi un tasto per continuare la ricerca" se eseguo ctrl+c non fa log out
 
 ******************************************************************************
 ****		FIXED BUGS		****
@@ -48,3 +50,8 @@
 - in caso di password o usrname troppo lunga, dare possibilità di annullare.
 fare refactory, magari con visuale
 		----> fixed
+
+- SERVER CRASHA QUANDO VOGLIO RISPONDERE A UN MEX
+	--> fixed: era modificata la gestione.
+	7bis. errore di segmentazione subito dopo inviato il mess: "premere un tasto per continuare la ricerca" segfault
+		----> c'era errore gestione: veniva inviato il file, ma non letto 

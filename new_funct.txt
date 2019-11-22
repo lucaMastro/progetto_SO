@@ -16,4 +16,6 @@ idee:
 
 
 
-aggiustare quando si da ctrl+c: aggiungere printf sul lato server che dicano cosa sia successo.
+3. aggiustare quando si da ctrl+c: aggiungere printf sul lato server che dicano cosa sia successo.
+
+4. verificare se serve il flag alla funzione get_mex: se non ho bisogno di allocare position, è perchè lato client stanno inviando un mess, non vogliono leggere il messaggio. in quel caso probabilmente non entro nel case di position e isnew. ragionarci bene, ora ho sonno

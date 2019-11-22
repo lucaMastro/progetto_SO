@@ -25,5 +25,5 @@ void write_string(int sock, char *string, int line);
 void read_mex(int sock, message **mex_list, int *position, int semid);
 void write_mex(int sock, message *mex);
 void error(int line);
-void send_mex(int sock, message *mex);
-int get_mex(int sock, message *mex); //store the sent mex in *mex
+void send_mex(int sock, message *mex, int invia_isnew_e_position);
+int get_mex(int sock, message *mex, int alloca_position); //store the sent mex in *mex; 
