@@ -150,7 +150,14 @@ start:
 		error(255);
 
 	message *mex = mess_list[*position];
-	get_mex(acc_sock, mex, 0);
+	if (!get_mex(acc_sock, mex, 0)){
+		/*i catched a ctrl+c signal in client-side. i have to increment 
+		 * the semaphore*/
+        	sops.sem_op = 1;
+	        if (semop(sem_write, &sops, 1) == -1)
+        	        error(158);
+		return -1;
+	}
 
 	server[*position] = 1;
 
@@ -297,8 +304,8 @@ is_read_op:
                                 if (ret >= 0)
                                         printf("messaggi consegnati con successo\n");
                                 else{
-                                	log_out(client_usrname);
-                                	close_server(acc_sock, client_usrname);
+                                	//log_out(client_usrname);
+                                	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
 
@@ -316,8 +323,8 @@ is_read_op:
                                 if (ret >= 0)
                                         printf("messaggio ricevuto con successo\n");
                                 else{
-					log_out(client_usrname);
-                                	close_server(acc_sock, client_usrname);
+					//log_out(client_usrname);
+                                	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
 
@@ -331,8 +338,8 @@ is_read_op:
                         case 4:
                                 ret = gestore_eliminazioni(acc_sock, client_usrname, message_list, my_mex, my_new_mex, server, sem_write, position, last);
 				if (ret < 0){
-                                	log_out(client_usrname);
-                                	close_server(acc_sock, client_usrname);
+                                	//log_out(client_usrname);
+                                	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
                                 break;
@@ -343,17 +350,17 @@ is_read_op:
                                 printf("stato aggiornato.\n");
                                 break;
                         case 6:
-                                log_out(client_usrname);
-                                close_server(acc_sock, client_usrname);
+                                //log_out(client_usrname);
+                                close_server(acc_sock, client_usrname, 1);
 				return 1;
                         case 7:
                                 delete_user(acc_sock, client_usrname, message_list, server, my_mex, last, position, sem_write);
-                                close_server(acc_sock, client_usrname);
+                                close_server(acc_sock, client_usrname, 0);
 				return 1;
                         case 8:
                                 ret = mng_cambio_pass(acc_sock, client_usrname);
 				if (ret < 0){
-                                	close_server(acc_sock, client_usrname);
+                                	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
                                 break;
@@ -375,7 +382,7 @@ check_operation:
         ret = 0;
         printf("waiting for an operation:\n");
         if (read_int(acc_sock, &operation, 931)){
-		close_server(acc_sock, *usr);
+		close_server(acc_sock, *usr, 0);
 		return 0;
 	}
 
@@ -389,7 +396,7 @@ check_operation:
                 /*      READING IF RETRY GETTING USRNAME        */
                 check_usr_restart:
                 if (read_int(acc_sock, &retry, 344)){
-			close_server(acc_sock, *usr);
+			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
 
@@ -403,14 +410,14 @@ check_operation:
                 }
                 /*      READING USR     */
                 if (read_string(acc_sock, usr, 944)){
-			close_server(acc_sock, *usr);
+			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
 
                 /*      READING IF RETRY GETTING PASSWORD       */
                 check_pw_restart:
                 if (read_int(acc_sock, &retry, 344)){
-			close_server(acc_sock, *usr);
+			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
                 switch (retry){
@@ -424,7 +431,7 @@ check_operation:
 
                 /*      READING PASSWORD        */
                 if (read_string(acc_sock, &pw, 958)){
-			close_server(acc_sock, *usr);
+			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
 
@@ -534,12 +541,13 @@ send_to_client:
 
 
 
-void close_server(int acc_sock, char *usr){
+void close_server(int acc_sock, char *usr, int flag){
       if (close(acc_sock) == -1)
                 error(541);
 
 //        printf("starting log out\n");
-  //  	log_out(usr);   
+	if (flag)        
+	   	log_out(usr);   
         printf("collegamento chiuso con successo.\n");
 }
 

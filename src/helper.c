@@ -66,6 +66,7 @@ int read_string(int sock, char **string, int line){
 	
 	if ( (len = read(sock, *string, len)) == -1)
 		error(line);
+	//printf("STRING = %s\n", *string);
 
 	return 0;
 }
@@ -103,7 +104,7 @@ int read_int(int sock, int *num, int line){
 		error(line);
 	
 	*num = atoi(str_num);
-//	printf("\n***READ INT: string_v: %s. int_v: %d\n", str_num, *num);
+	//printf("\n***READ INT: string_v: %s. int_v: %d\n", str_num, *num);
 	free(str_num);
 	if (*num == MAX_NUM_MEX + 1)
 		return 1;
@@ -116,10 +117,13 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 	int i = 0;
 	char *one_string, *token;
 	
-	read_string(sock, &one_string, 88);
+	if (read_string(sock, &one_string, 88))
+		return 0;
 
 	/*PARSING*/
 	token = strtok(one_string, "\037");
+	
+	audit;
 	if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
 		error(30);
 	bzero(mex -> usr_sender, MAX_USR_LEN);
@@ -165,6 +169,7 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 		}
 		i++;
 	}
+	return 1;
 }
 
 

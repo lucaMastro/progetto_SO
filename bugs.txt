@@ -1,18 +1,24 @@
 1. registration login se inserisco operazione sbagliata manca un fflush
 
-3. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
 
-5. campo text vuoto, capitato una volta nel cercare i casi di segfault con invio
 
 6. server-side: registrazione con usrname già presente manca uno \n "waiting for data"
 
-7. non aggiorna my_new_mex quando il messaggio va nella casella di un messaggio precedentemente cancellato
 
-8. sui "premi un tasto per continuare la ricerca" se eseguo ctrl+c non fa log out
+
+NON FISSI:
+
+1. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
+
+2. campo text vuoto, capitato una volta nel cercare i casi di segfault con invio
+
 
 ******************************************************************************
 ****		FIXED BUGS		****
 ******************************************************************************
+
+
+
 
 -cambio pass. se faccio ctrl+c invece di inserire la pass, il file ha cancellato la pass. 
 		----> Fixed con handler ctrl+c
@@ -55,3 +61,23 @@ fare refactory, magari con visuale
 	--> fixed: era modificata la gestione.
 	7bis. errore di segmentazione subito dopo inviato il mess: "premere un tasto per continuare la ricerca" segfault
 		----> c'era errore gestione: veniva inviato il file, ma non letto 
+
+
+- non aggiorna my_new_mex quando il messaggio va nella casella di un messaggio precedentemente cancellato
+		----> fixed: nel nuovo modo di inizializzare il server, non veniva mai più cambiato il valore di isnew
+
+- ctrl+c su cambio pass non esegue logout.
+		----> fixed modificando la funzione "close server" aggiungendo il flag per determinare logout o no.
+
+
+- sui "premi un tasto per continuare la ricerca" se eseguo ctrl+c non fa log out
+		----> probabilmente fixato insieme a quello sopra
+
+
+- ctrl+c su inserisci oggetto o messaggio -> seg fault server-side
+		----> mancava il check del ritorno su "read_string(&one_string)" in get_mex
+
+
+- non fa logout se ctrl+c per seconda volta consecutiva su oggetto/testo. potrebbe essere legato al fatto che il semaforo non viene aumentato se mando il primo ctrl+c:
+l'interruzione avviene infatti dopo aver preso il ticket
+		----> fixed incrementando il semaforo nella verifica dell'uscita di get_mex
