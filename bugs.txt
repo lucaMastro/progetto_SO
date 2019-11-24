@@ -1,12 +1,10 @@
 
-
 NON FISSI:
 
 1. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
 
 2. campo text vuoto, capitato una volta nel cercare i casi di segfault con invio
 
-3. capitato from strano
 
 
 ******************************************************************************
@@ -78,3 +76,20 @@ fare refactory, magari con visuale
 - non fa logout se ctrl+c per seconda volta consecutiva su oggetto/testo. potrebbe essere legato al fatto che il semaforo non viene aumentato se mando il primo ctrl+c:
 l'interruzione avviene infatti dopo aver preso il ticket
 		----> fixed incrementando il semaforo nella verifica dell'uscita di get_mex
+
+
+
+- capita from strano. solito errore di puntatore che cambia durante il parsing del messaggio. 
+		----> fixed facendo un uguale tra il campo da parsare e token: "mex -> usr_destination = token;". sono stati tolti i vari malloc dei campi.
+			==> questo generava un altro bug, in ritorno dal get_mex, mi dava o "errore di seg" oppure "munmap_chunk() invalid pointer". 
+					----> risolto rimettendo i vari malloc. ma non so quanto sia giusto
+
+
+
+- scenario:
+	io sono a
+	ho messaggio da b m0, e da c, m1
+	b elimina account
+	non mi fa rispondere nemmeno a m1
+
+		----> fixed: in leggi_messaggio messo minimal code = 0 e can_i_wb = 1 all'inizio del while

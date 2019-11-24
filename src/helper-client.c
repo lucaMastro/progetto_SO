@@ -59,7 +59,7 @@ void handler(int signo){
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
-        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb = 1, op, minimal_code = 0, leave = 0, pos; 
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos; 
         char *sender, *object, *text;
         message *mex;
   
@@ -73,6 +73,9 @@ start:
         while(found && again){
 		if (leave)
 			break;
+		
+		minimal_code = 0;
+		can_i_wb = 1;
 
   		if ((mex = malloc(sizeof(mex))) == NULL)
                 	error(24);
@@ -124,7 +127,6 @@ usr_will:
 			printf("codice non valido. riprovare\n");
 			goto usr_will;
 		}
-
 		/*SENDING USR'S WILL*/
 		write_int(sock_ds, op, 116);
 
@@ -140,7 +142,7 @@ usr_will:
 				fflush(stdin);
 				break;
 			case 1:	
-	                        cancella_messaggio(sock_ds, *(mex -> position));
+	                        cancella_messaggio(sock_ds, mex -> position);
 				printf("premi un tasto per continuare la ricerca: ");
 				fflush(stdin);
 				break;
@@ -150,7 +152,9 @@ usr_will:
 				leave = 1;
 				break;
                 }
+		audit;
 		free(mex);
+		audit;
 		if (!leave){ //updating found
 			read_int(sock_ds, &found, 156);
 		}

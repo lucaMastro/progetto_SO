@@ -103,13 +103,16 @@ message** inizializza_server(){ //sequenza di messaggi
 		mex_list[i] = (message*) malloc(sizeof(message));
 		if (mex_list[i] == NULL)
 			error(27);
-		if ((mex_list[i] -> is_new = (int *) malloc(sizeof(int))) == NULL)
-			error(53);
-		*(mex_list[i] -> is_new) = 1;
 
-		if ((mex_list[i] -> position = (int*) malloc(sizeof(int))) == NULL)
-			error(56);
-		*(mex_list[i]-> position) = i;
+	/*	if ((mex_list[i] -> is_new = (int *) malloc(sizeof(int))) == NULL)
+			error(53);*/
+	
+		mex_list[i] -> is_new = 1;
+
+	/*	if ((mex_list[i] -> position = (int*) malloc(sizeof(int))) == NULL)
+			error(56);*/
+
+		mex_list[i] -> position = i;
 
 		mex_list[i] -> is_sender_deleted = 0;
 	}
@@ -167,6 +170,7 @@ start:
         	        error(158);
 		return -1;
 	}
+	stampa_messaggio(mex);
 
 	server[*position] = 1;
 
@@ -218,7 +222,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 			/*	SENDING MEX	*/
 			send_mex(acc_sock, mex, 1);
 
-                        *(mex -> is_new) = 0;
+                        mex -> is_new = 0;
                         found = 0;
 
 			/*READING USR_WILL*/
@@ -557,7 +561,7 @@ int update_system_state(int *my_mex, int *my_new_mex, message **mex_list, char *
                 cmp = strcmp(mex_list[i] -> usr_destination, usr);
                 if (!cmp){
                         my_mex[i] = 1;
-                        if (*(mex_list[i] -> is_new) == 1){
+                        if (mex_list[i] -> is_new == 1){
                                 my_new_mex[i] = 1;
                                 found_new = 1;
                         }
@@ -650,7 +654,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 free(mex -> usr_sender);
                 free(mex -> object);
                 free(mex -> text);
-		*(mex -> is_new) = 1;
+		mex -> is_new = 1;
 
                 /*START UPDATING BITMASKS*/
                 server[code] = 0;

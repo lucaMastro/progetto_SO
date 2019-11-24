@@ -13,8 +13,8 @@ typedef struct MESSAGE{
        	char *usr_sender;
        	char *object;
         char *text;
-        int *is_new;
-	int *position; //message's position
+        int is_new;
+	int position; //message's position
 	int is_sender_deleted;
 } message;
 
