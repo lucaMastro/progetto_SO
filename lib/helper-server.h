@@ -4,7 +4,7 @@ int ricevi_messaggio(int sock_ds, message **mess_list, int *position, int *last,
 int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int flag, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position);
 int managing_usr_menu(int acc_sock, message **message_list, int *position, int *last, char *usr, int *my_mex, int *my_new_mex, int *server, int sem_write);
 int managing_usr_registration_login(int acc_sock, char **usr); 
-void close_server(int acc_sock, char *usr, int flag);
+void close_server(int acc_sock, char *usr, int flag); //flag = 1 means i have to logout too
 int update_system_state(int *my_mex, int *my_new_mex, message **mex_list, char *usr, int position, int *server);
 void update_position(int *position, int *server, int last);
 void stampa_bitmask(int *bitmask, int last);

@@ -1,12 +1,20 @@
-1. quando invio un messaggio, fornire all'utente tutti i possibili destinatari.
-realizzazione:
 
-idee:
-- dopo ogni registrazione, aggiungere a un file .txt l'usrname dell'utente, in fase di registrazione. in questo caso il problema sarebbe gestire le eliminazioni. 
+
+4. verificare se serve il flag alla funzione get_mex: se non ho bisogno di allocare position, è perchè lato client stanno inviando un mess, non vogliono leggere il messaggio. in quel caso probabilmente non entro nel case di position e isnew. ragionarci bene, ora ho sonno
+
+5. i campi interi della struttura possono essere int, invece che int*?
+
+**************************************************
+*****		REALIZZATE		**********
+**************************************************
+
+- quando invio un messaggio, fornire all'utente tutti i possibili destinatari.
+realizzazione:
+ +dopo ogni registrazione, aggiungere a un file .txt l'usrname dell'utente, in fase di registrazione. in questo caso il problema sarebbe gestire le eliminazioni. 
 	gestita eliminazione eliminando la riga corrispondende all'username eliminato.
 
 
-2. inserire nella definizione del messaggio un campo intero buleano che spicifica se chi ha inviato il messaggio si è cancellato. qualora il mittente risultasse eliminato, blocco la possibilità di rispondere al messaggio. in questo modo risolvo il problema del seguente scenario:
+- inserire nella definizione del messaggio un campo intero booleano che spicifica se chi ha inviato il messaggio si è cancellato. qualora il mittente risultasse eliminato, blocco la possibilità di rispondere al messaggio. in questo modo risolvo il problema del seguente scenario:
 
 	a invia un messaggio a b
 	a elimina il suo account
@@ -15,7 +23,4 @@ idee:
 	il messaggio arriva al nuovo b
 
 
-
-3. aggiustare quando si da ctrl+c: aggiungere printf sul lato server che dicano cosa sia successo.
-
-4. verificare se serve il flag alla funzione get_mex: se non ho bisogno di allocare position, è perchè lato client stanno inviando un mess, non vogliono leggere il messaggio. in quel caso probabilmente non entro nel case di position e isnew. ragionarci bene, ora ho sonno
+- aggiustare quando si da ctrl+c: aggiungere printf sul lato server che dicano cosa sia successo.

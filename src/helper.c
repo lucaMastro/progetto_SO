@@ -35,6 +35,13 @@ void stampa_messaggio(message *mess){
 	printf("to:\n\t%s\n", 	mess -> usr_destination);
 	printf("object:\n\t%s\n", mess -> object);
 	printf("text:\n\t%s\n\n", mess -> text);
+
+	if (mess -> is_sender_deleted)
+		c = 'y';
+	else
+		c = 'n';
+	
+	printf("is sender deleted:\n\t%c\n\n", c);
 	printf(".....................................................................................\n");
 
 }
@@ -164,6 +171,9 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 					*(mex -> position) = atoi(token);
 				}
 				break;
+			case 5:
+				mex -> is_sender_deleted = atoi(token);
+				break;
 			default:
 				break;
 		}
@@ -181,7 +191,7 @@ void send_mex(int sock, message *mex, int invia_is_new_and_position){
 //	stampa_messaggio(mex);
 	/*	sender, object, text, destination, is_new, position	*/
 	if (invia_is_new_and_position)
-		sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination, *(mex -> is_new), *(mex -> position));
+		sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d\037%d", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination, *(mex -> is_new), *(mex -> position), mex -> is_sender_deleted);
 	
 	else
 		sprintf(one_string, "%s\037%s\037%s\037%s\037", mex -> usr_sender, mex -> object, mex -> text, mex -> usr_destination);	

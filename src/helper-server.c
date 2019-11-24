@@ -110,6 +110,8 @@ message** inizializza_server(){ //sequenza di messaggi
 		if ((mex_list[i] -> position = (int*) malloc(sizeof(int))) == NULL)
 			error(56);
 		*(mex_list[i]-> position) = i;
+
+		mex_list[i] -> is_sender_deleted = 0;
 	}
 	
 	return mex_list;
@@ -120,7 +122,7 @@ message** inizializza_server(){ //sequenza di messaggi
 
 int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last, int *server, int sem_write, int *my_mex, int *my_new_mex, char *client_usr, int flag){ //flag == 1 means its a write back
 	char *usr_destination, *usr_sender, *object, *text, *destination_file;
-	int i, len, fileid, exist, get_out;
+	int i, len, fileid, exist, get_out, retry;
 	struct sembuf sops;
 
 	sops.sem_flg = 0;
@@ -137,11 +139,18 @@ start:
 
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
 	exist = check_destination(&usr_destination, NULL);	
+
 	/*	SENDING IF EXISTS	 */
 	write_int(acc_sock, exist, 269);
 	if (!exist){
-		if (!flag)
-			goto start;
+		if (!flag){ //non è un write back: leggo se riprovare
+			read_int(acc_sock, &retry, 146);
+			if (retry) //user wants to go back to main menu
+				return 1;
+			else
+				goto start;
+		}
+			
 		else
 			return 1;
 	}
@@ -208,23 +217,6 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 			
 			/*	SENDING MEX	*/
 			send_mex(acc_sock, mex, 1);
-/*
-			sleep(5);
-		       	/*WRITING IS_NEW
-                        write_int(acc_sock, *(mex -> is_new), 714);
-
-                        /*WRITING SENDER
-                        write_string(acc_sock, mex -> usr_sender, 718);
-
-                        /*WRITING OBJECT
-                        write_string(acc_sock, mex -> object, 723);
-
-                        /*WRITING TEXT
-                        write_string(acc_sock, mex -> text, 727);
-
-                        /*WRITING POSITION/
-                        write_int(acc_sock, i, 731); //*(mex -> position), 731);
-		*/
 
                         *(mex -> is_new) = 0;
                         found = 0;
@@ -288,7 +280,7 @@ int managing_usr_menu(int acc_sock, message **message_list, int *position, int *
 
                 printf("\nwaiting for an operation:\n");
                 if (read_int(acc_sock, &operation, 693)){
-			log_out(client_usrname);
+			close_server(acc_sock, client_usrname, 1); 
 			return 1;
 		}
 
@@ -541,7 +533,7 @@ send_to_client:
 
 
 
-void close_server(int acc_sock, char *usr, int flag){
+void close_server(int acc_sock, char *usr, int flag){ //flag = 1 means i have to logout
       if (close(acc_sock) == -1)
                 error(541);
 
@@ -654,11 +646,6 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
                 /*START EMPTYNG MESSAGE*/
                 mex = mex_list[code];
-/*                bzero(mex -> usr_destination, strlen(mex -> usr_destination));
-                bzero(mex -> usr_sender, strlen(mex -> usr_sender));
-                bzero(mex -> object, strlen(mex -> object));
-                bzero(mex -> text, strlen(mex -> text));*/
-		
                 free(mex -> usr_destination);
                 free(mex -> usr_sender);
                 free(mex -> object);
@@ -752,13 +739,16 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
                 error(1294);
 
         for (i = 0; i < *last; i++){
+		mex = mex_list[i];
                 if (my_mex[i] == 1){ //i is the index of a mex i have to free
 
                         /*START EMPTYNG MESSAGE*/
-                        mex = mex_list[i];
-                        bzero(mex -> usr_destination, strlen(mex -> usr_destination));
-                        bzero(mex -> usr_sender, strlen(mex -> usr_destination));
-                        bzero(mex -> text, strlen(mex -> usr_destination));
+
+        	        free(mex -> usr_destination);
+	                free(mex -> usr_sender);
+                	free(mex -> object);
+        	        free(mex -> text);
+			mex -> is_sender_deleted = 0;
 
                         /*START UPDATING BITMASKS*/
                         server[i] = 0;
@@ -767,6 +757,10 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
                         if (i < *position)
                                 *position = i; //eseguito almeno una volta 100%
                 }
+		else{//non è un messaggio per me: controllo se l'ho inviato io e, in tal caso, setto a 1 il campo "is_sender_deleted"
+			if (!strcmp(mex -> usr_sender, usr))
+			       mex -> is_sender_deleted = 1;		
+		}
         }
 
         update_last(server, last);

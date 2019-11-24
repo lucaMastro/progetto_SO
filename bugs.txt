@@ -1,9 +1,3 @@
-1. registration login se inserisco operazione sbagliata manca un fflush
-
-
-
-6. server-side: registrazione con usrname già presente manca uno \n "waiting for data"
-
 
 
 NON FISSI:
@@ -11,6 +5,8 @@ NON FISSI:
 1. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
 
 2. campo text vuoto, capitato una volta nel cercare i casi di segfault con invio
+
+3. capitato from strano
 
 
 ******************************************************************************
@@ -64,7 +60,8 @@ fare refactory, magari con visuale
 
 
 - non aggiorna my_new_mex quando il messaggio va nella casella di un messaggio precedentemente cancellato
-		----> fixed: nel nuovo modo di inizializzare il server, non veniva mai più cambiato il valore di isnew
+		----> fixed: nel nuovo modo di inizializzare il server, non veniva mai più cambiato il valore di isnew; risolto reimpostandolo a 1 ogni volta che un 
+			messaggio viene eliminato: position rimane invariato mentre gli altri campi vengono liberati (free).
 
 - ctrl+c su cambio pass non esegue logout.
 		----> fixed modificando la funzione "close server" aggiungendo il flag per determinare logout o no.

@@ -29,17 +29,22 @@ void get_file_db(int sock_ds){
 	if (buffer == NULL)
 		error(195);
 
+	printf("[");
 	read_int(sock_ds, &found, 194);
-	while (found){
+	while (1){
 		bzero(buffer, MAX_USR_LEN + 1);
 		read_string(sock_ds, &buffer, 197);
 
 		token = strtok(buffer, "\n");
-		printf("%s ", token);
+		printf("%s", token);
 
 		/* UPDATING IF FOUND */
 		read_int(sock_ds, &found, 194);
+		if (!found)
+			break;
+		printf(", ");
 	}
+	printf("]");
 
 	free(buffer);
 	return;
@@ -94,7 +99,7 @@ start:
 
                 /*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
 
-                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4)
+                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4 && !(mex -> is_sender_deleted))
 	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
 		else{
 	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
@@ -171,9 +176,9 @@ usr_will:
 
 }
 
-void invia_messaggio(int acc_sock, char *sender){
+void invia_messaggio(int sock_ds, char *sender){
         char *destination, *obj, *mes;
-        int len_dest, len_send, len_obj, len_mess, ret;
+        int len_dest, len_send, len_obj, len_mess, ret, retry;
 	message *mex;
 
         printf("\e[1;1H\e[2J");
@@ -187,7 +192,7 @@ void invia_messaggio(int acc_sock, char *sender){
         printf(".....................................................................................\n");
         printf(".....................................................................................\n\n");
 	printf("\t\tUtenti a cui è possibile inviare un messaggio:\n");
-	get_file_db(acc_sock);
+	get_file_db(sock_ds);
 	printf("\n");
         printf(".....................................................................................\n");
         printf(".....................................................................................\n\n");
@@ -197,21 +202,39 @@ void invia_messaggio(int acc_sock, char *sender){
 
 restart:
         //GETTING DATA AND THEIR LEN
-        printf("inserisci l'username del destinatario (max %d caratteri):\n", MAX_USR_LEN);
+        printf("username (max %d caratteri):\t", MAX_USR_LEN);
         if (scanf("%ms", &(mex -> usr_destination)) == -1 && errno != EINTR)
                 error(470);
 
         fflush(stdin);
 
         //invio destinatario
-        write_string(acc_sock, mex -> usr_destination, 633);
+        write_string(sock_ds, mex -> usr_destination, 633);
 
         //reading response if destination exists:
-        read_int(acc_sock, &ret, 539);
+        read_int(sock_ds, &ret, 539);
 
         if (!ret){
-                printf("destinatario non esiste. per favore riprova:\n\n");
-                goto restart;
+retry:
+                printf("destinatario non esiste.\n\n"); 
+        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+	        printf("|                                                                                    |\n");
+	        printf("|   0. Riprovare				    				     |\n");
+	        printf("|   1. Anullare e tornare al menù principale					     |\n");
+	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+		if (scanf("%d", &retry) == -1 && errno != EINTR)
+			error(220);
+		if (retry < 0 || retry > 1){
+			printf("operazione non valida. premi un tasto per riprovare\n");
+			fflush(stdin);
+			goto retry;
+		}
+		write_int(sock_ds, retry, 221);
+		
+		if (retry)
+			return;
+		else
+			goto restart;
         }
 
         len_dest = strlen(mex -> usr_destination);
@@ -222,8 +245,8 @@ restart:
 
 	mex -> usr_sender = sender;
 
-        printf(".....................................................................................\n\n");
-        printf("inserisci l'oggetto del messaggio (max %d caratteri):\n", MAX_OBJ_LEN);
+        printf("\n.....................................................................................\n\n");
+        printf("object (max %d caratteri):\t", MAX_OBJ_LEN);
         if (scanf(" %m[^\n]", &(mex -> object)) == -1 && errno != EINTR)
                 error(485);
 
@@ -235,8 +258,8 @@ restart:
                 goto restart;
         }
 
-        printf(".....................................................................................\n\n");
-        printf("inserisci il testo del messaggio: (max %d caratteri):\n", MAX_MESS_LEN);
+        printf("\n.....................................................................................\n\n");
+        printf("text: (max %d caratteri):\t", MAX_MESS_LEN);
         if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
                 error(497);
         fflush(stdin);
@@ -248,7 +271,7 @@ restart:
         }
 
         //SENDING DATA
-	send_mex(acc_sock, mex, 0);
+	send_mex(sock_ds, mex, 0);
 
         printf("\n\ninvio del messaggio avvenuto con successo. attendo conferma ricezione...\n");
 

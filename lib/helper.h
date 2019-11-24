@@ -15,6 +15,7 @@ typedef struct MESSAGE{
         char *text;
         int *is_new;
 	int *position; //message's position
+	int is_sender_deleted;
 } message;
 
 void stampa_messaggio(message *mess);
