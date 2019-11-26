@@ -19,25 +19,29 @@
 
 void send_file_db(int acc_sock){
 	FILE *fd;
-	char buffer[MAX_USR_LEN + 1], *ret;
-	int found;
+	char buffer[MAX_USR_LEN + 2], *ret;
+	int found, i = 0;
 
 	fd = fopen(".db/list.txt", "r");
 	if (fd == NULL)
 		error(378);
 	while (1){
 		found = 1;
-		bzero(buffer, MAX_USR_LEN + 1); 
-		ret = fgets(buffer, MAX_USR_LEN + 1, fd);
-		if (ret == NULL)
+		bzero(buffer, MAX_USR_LEN + 2);
+		ret = fgets(buffer, MAX_USR_LEN + 2, fd);
+		if (ret == NULL || strcmp(ret, "\n") == 0)
 			break;
 		write_int(acc_sock, found, 383);
 		write_string(acc_sock, buffer, 385);
+		printf("%d. %s.%s\n\n", i, ret,buffer);
+		i++;
 	}
-
+	
+	      audit;	
 	found = 0;
 	write_int(acc_sock, found, 383);
 	fclose(fd);
+	audit;
 }
 
 
@@ -215,10 +219,19 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         
                         found = 1;
 
-
-                        /*WRITING FOUND*/
-                        write_int(acc_sock, found, 710);
 			
+                        write_int(acc_sock, found, 219);
+  		
+		/*
+			write_int(acc_sock, mex -> is_new, 222);
+                        write_string(acc_sock, mex -> usr_sender, 225);
+                        write_string(acc_sock, mex -> object, 723);
+                        write_string(acc_sock, mex -> text, 727);
+                        write_int(acc_sock, i, 731); //*(mex -> position), 731);
+			write_int(acc_sock, mex -> is_sender_deleted, 224);*/
+
+
+
 			/*	SENDING MEX	*/
 			send_mex(acc_sock, mex, 1);
 

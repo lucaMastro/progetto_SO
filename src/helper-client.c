@@ -32,7 +32,7 @@ void get_file_db(int sock_ds){
 	printf("[");
 	read_int(sock_ds, &found, 194);
 	while (1){
-		bzero(buffer, MAX_USR_LEN + 1);
+		bzero(buffer, MAX_USR_LEN + 2);
 		read_string(sock_ds, &buffer, 197);
 
 		token = strtok(buffer, "\n");
@@ -62,7 +62,32 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
         int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos; 
         char *sender, *object, *text;
         message *mex;
-  
+
+     	if ((mex = (message*) malloc(sizeof(message))) == NULL)
+                error(24);
+	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
+/*	mex -> position = 0;
+	mex -> is_sender_deleted = 0;
+	mex -> is_new = 0;*/
+
+	/*
+        if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+                error(27);
+//        bzero(mex -> usr_destination, MAX_USR_LEN);
+
+        if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+                error(30);
+  //      bzero(mex -> usr_sender, MAX_USR_LEN);
+
+        if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
+                error(33);
+    //    bzero(mex -> object, MAX_OBJ_LEN);
+
+        if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
+                error(36);
+      //  bzero(mex -> text, MAX_MESS_LEN);
+	
+*/
 start:
         
 	read_int(sock_ds, &found, 95);
@@ -70,10 +95,6 @@ start:
 	if (found) //im gonna start the while
 		isfirst = 0;
 
-  	if ((mex = malloc(sizeof(mex))) == NULL)
-               	error(24);
-       
-       	printf("size0: %ld\n", sizeof(mex));	
 	while(found && again){
 		if (leave)
 			break;
@@ -81,10 +102,17 @@ start:
 		minimal_code = 0;
 		can_i_wb = 1;
 
-		
-                get_mex(sock_ds, mex, 1);
-       		printf("size1: %ld\n", sizeof(mex));	
-                
+/*
+                read_int(sock_ds, &(mex -> is_new), 101);
+                read_string(sock_ds, &(mex ->usr_sender), 108);
+                read_string(sock_ds, &(mex -> object), 112);
+                read_string(sock_ds, &(mex -> text), 116);
+                read_int(sock_ds, &(mex -> position), 119);
+		read_int(sock_ds, &(mex -> is_sender_deleted), 107);                
+                strcpy(mex -> usr_destination, my_usrname);
+*/
+		get_mex(sock_ds, mex, 1); 
+
 		/*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
 
@@ -178,7 +206,7 @@ usr_will:
 	                }
         	}
 	}
-//	free(mex);
+	free(mex);
         return 0;
 
 }
@@ -252,8 +280,8 @@ retry:
 
 	mex -> usr_sender = sender;
 
-        printf("\n.....................................................................................\n\n");
-        printf("object (max %d caratteri):\t", MAX_OBJ_LEN);
+        printf("\n");
+	printf("object (max %d caratteri):\t", MAX_OBJ_LEN);
         if (scanf(" %m[^\n]", &(mex -> object)) == -1 && errno != EINTR)
                 error(485);
 

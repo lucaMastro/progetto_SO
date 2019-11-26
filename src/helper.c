@@ -45,13 +45,14 @@ void write_string(int sock, char *string, int line){
 
 	/*if (write(sock, &len, sizeof(len)) == -1)
 		error(1172);*/
-
+//	printf("len. ");
 	write_int(sock, len, line);
 	//audit;
 //	printf("***WRITE STRING: %s.\n\n", string);
 
 	if (write(sock, string, len) == -1)
 		error(line);
+//	printf("scrivo: %s.\n", string);
 }
 
 int read_string(int sock, char **string, int line){
@@ -59,21 +60,21 @@ int read_string(int sock, char **string, int line){
 
 	if (read_int(sock, &len, 58))
 		return 1;
-	
-	if ((*string = malloc(sizeof(char) * (len+1))) == NULL)
+//	printf("len: %d\n", len);	
+	if ((*string = malloc(sizeof(char) * (len + 1))) == NULL)
 		error(62);
 	bzero(*string, len+1);
 	
 	if ( (len = read(sock, *string, len)) == -1)
 		error(line);
-	//printf("STRING = %s\n", *string);
+//	printf("letto: %s.\n", *string);
 
 	return 0;
 }
 
 void write_int(int sock, int num, int line){;
 	//IMPEDIRE L'INSERIMENTO DI NUMERI N TALI CHE:  |N| > 9999.
-	char *str_num = malloc(sizeof(char) * MAX_CIFRE); //-9999
+	char *str_num = malloc(sizeof(char) * (MAX_CIFRE + 1)); //-9999
 
 	if (str_num == NULL){
 		printf("error helper at line: 77.\n");
@@ -86,14 +87,14 @@ void write_int(int sock, int num, int line){;
 
 	if (write(sock, str_num, MAX_CIFRE) == -1)
 		error(line);
-//	audit;
+//	printf("scrivo: %s\n", str_num);
 	free(str_num);
 }
 
 
 int read_int(int sock, int *num, int line){
 
-	char *str_num = malloc(sizeof(char) * MAX_CIFRE);
+	char *str_num = malloc(sizeof(char) * (MAX_CIFRE + 1));
 	if (str_num == NULL){
 		printf("error helper at line: 77.\n");
 		error(line);
@@ -102,7 +103,7 @@ int read_int(int sock, int *num, int line){
 
 	if (read(sock, str_num, MAX_CIFRE) == -1)
 		error(line);
-	
+//	printf("letto: %s.\n", str_num);	
 	*num = atoi(str_num);
 	//printf("\n***READ INT: string_v: %s. int_v: %d\n", str_num, *num);
 	free(str_num);
@@ -192,28 +193,31 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 	if (read_string(sock, &one_string, 88))
 		return 0;
 
+	printf("onestring %s.\n", one_string);
 	/*PARSING*/
 	token = strtok(one_string, "\037");
 //	printf("%ld\n", strlen(one_string));
 	
-	if ((mex -> usr_destination = (char*) calloc(MAX_USR_LEN, sizeof(char))) == NULL)
-					error(30);
+	if ((mex -> usr_destination = (char*) calloc(MAX_USR_LEN + 1, sizeof(char))) == NULL)	
+		error(30);
+	audit;
 	strcpy(mex -> usr_destination, token);
+	audit;
 	while ((token = strtok(NULL, "\037")) != NULL){
 		switch(i){
 			case 0:
-				if ((mex -> usr_sender = (char*) calloc(MAX_USR_LEN, sizeof(char))) == NULL)
+				if ((mex -> usr_sender = (char*) calloc(MAX_USR_LEN + 1, sizeof(char))) == NULL)
 					error(30);
 				strcpy(mex -> usr_sender, token);
 				break;
 			case 1:
-				if ((mex -> object = (char*) calloc(MAX_OBJ_LEN, sizeof(char))) == NULL)
+				if ((mex -> object = (char*) calloc(MAX_OBJ_LEN + 1, sizeof(char))) == NULL)
 					error(33);
 				strcpy(mex -> object, token);
 
 				break;
 			case 2:
-				if ((mex -> text = (char*) calloc(MAX_MESS_LEN, sizeof(char))) == NULL)
+				if ((mex -> text = (char*) calloc(MAX_MESS_LEN + 1, sizeof(char))) == NULL)
 					error(36);
 					strcpy(mex -> text, token);
 				break;
