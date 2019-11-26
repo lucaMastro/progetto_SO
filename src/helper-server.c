@@ -229,7 +229,6 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 read_usr_will:
                         if (read_int(acc_sock, &op, 613))
 				return -1;
-                        
 			switch(op){
 				case 0:
 					ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);

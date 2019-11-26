@@ -72,7 +72,8 @@ start:
 
   	if ((mex = malloc(sizeof(mex))) == NULL)
                	error(24);
-        
+       
+       	printf("size0: %ld\n", sizeof(mex));	
 	while(found && again){
 		if (leave)
 			break;
@@ -81,9 +82,10 @@ start:
 		can_i_wb = 1;
 
 		
-                isnew = get_mex(sock_ds, mex, 1);
-
-                /*PRINTING MESSAGE*/
+                get_mex(sock_ds, mex, 1);
+       		printf("size1: %ld\n", sizeof(mex));	
+                
+		/*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
 
 	        printf("......................................................................................\n");
@@ -147,17 +149,18 @@ usr_will:
 				printf("premi un tasto per continuare la ricerca: ");
 				fflush(stdin);
 				break;
-			case 2:
-				break;
+/*			case 2:
+				break;*/
 			case 3:
 				leave = 1;
+				break;
+			default:
 				break;
                 }
 		if (!leave){ //updating found
 			read_int(sock_ds, &found, 156);
 		}
 	}
-	free(mex);
 	
         if (!leave){
 		if (isfirst && !flag)
@@ -175,6 +178,7 @@ usr_will:
 	                }
         	}
 	}
+//	free(mex);
         return 0;
 
 }
@@ -200,7 +204,7 @@ void invia_messaggio(int sock_ds, char *sender){
         printf(".....................................................................................\n");
         printf(".....................................................................................\n\n");
 
-	if ((mex = malloc(sizeof(message))) == NULL)
+	if ((mex = (message*) malloc(sizeof(message))) == NULL)
 		error(183);
 
 restart:

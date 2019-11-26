@@ -30,7 +30,7 @@ helper.o:
 	gcc -o $(H).o $(H).c -c
 
 helper-server.o:
-	gcc -o $(HS).o $(HSSRC) -c
+	gcc -o$(HS).o $(HSSRC) -c
 
 helper-client.o:
 	gcc -o $(HC).o $(HCSRC) -c 	

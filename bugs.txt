@@ -1,3 +1,13 @@
+1. errore:
+"double free or corruption (out)
+Annullato (core dump creato)"
+
+se:
+ +metto un oggetto di 12 elementi
+ +metto un text di 12 elementi
+
+
+
 
 NON FISSI:
 
