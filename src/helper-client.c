@@ -70,15 +70,16 @@ start:
 	if (found) //im gonna start the while
 		isfirst = 0;
 
-        while(found && again){
+  	if ((mex = malloc(sizeof(mex))) == NULL)
+               	error(24);
+        
+	while(found && again){
 		if (leave)
 			break;
 		
 		minimal_code = 0;
 		can_i_wb = 1;
 
-  		if ((mex = malloc(sizeof(mex))) == NULL)
-                	error(24);
 		
                 isnew = get_mex(sock_ds, mex, 1);
 
@@ -152,13 +153,11 @@ usr_will:
 				leave = 1;
 				break;
                 }
-		audit;
-		free(mex);
-		audit;
 		if (!leave){ //updating found
 			read_int(sock_ds, &found, 156);
 		}
 	}
+	free(mex);
 	
         if (!leave){
 		if (isfirst && !flag)

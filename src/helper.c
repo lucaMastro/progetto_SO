@@ -194,25 +194,28 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 
 	/*PARSING*/
 	token = strtok(one_string, "\037");
+//	printf("%ld\n", strlen(one_string));
 	
-	mex -> usr_destination = token;
+	if ((mex -> usr_destination = (char*) calloc(MAX_USR_LEN, sizeof(char))) == NULL)
+					error(30);
+	strcpy(mex -> usr_destination, token);
 	while ((token = strtok(NULL, "\037")) != NULL){
 		switch(i){
 			case 0:
-				if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
+				if ((mex -> usr_sender = (char*) calloc(MAX_USR_LEN, sizeof(char))) == NULL)
 					error(30);
-				mex -> usr_sender = token;
+				strcpy(mex -> usr_sender, token);
 				break;
 			case 1:
-				if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
+				if ((mex -> object = (char*) calloc(MAX_OBJ_LEN, sizeof(char))) == NULL)
 					error(33);
-				mex -> object = token;
+				strcpy(mex -> object, token);
 
 				break;
 			case 2:
-				if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
+				if ((mex -> text = (char*) calloc(MAX_MESS_LEN, sizeof(char))) == NULL)
 					error(36);
-					mex -> text = token;
+					strcpy(mex -> text, token);
 				break;
         
 			case 3:
@@ -227,8 +230,8 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 			default:
 				break;
 		}
-		printf("%s\n", token);
-		printf("usr_destination: %s\n\n", mex -> usr_destination);
+	//	printf("%s\n", token);
+	//	printf("usr_destination: %s\n\n", mex -> usr_destination);
 		i++;
 	}
 	return 1;
