@@ -240,4 +240,5 @@ void *thread_func(void *sock_ds){
 		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, &server, sem_write))
 			break;
 	}
+	printf("fine\n");
 }

@@ -1,13 +1,6 @@
-1. errore:
-"double free or corruption (out)
-Annullato (core dump creato)"
+1. un messaggio con oggetto troppo lungo viene inviato comunque: mi ritorna all'inserimento del destinatario, ma poi lo invia
 
-se:
- +metto un oggetto di 12 elementi
- +metto un text di 12 elementi
-
-
-
+2. manca un chekc su numeri negativi: non possono essere minori -9999 a causa delle cifre 
 
 NON FISSI:
 
@@ -103,3 +96,18 @@ l'interruzione avviene infatti dopo aver preso il ticket
 	non mi fa rispondere nemmeno a m1
 
 		----> fixed: in leggi_messaggio messo minimal code = 0 e can_i_wb = 1 all'inizio del while
+
+
+
+- errore se inviavo mess con campi troppo lunghi:
+"double free or corruption (out)
+Annullato (core dump creato)"
+
+se:
+ +metto un oggetto di 12 elementi
+ +metto un text di 12 elementi
+	----> fixed: messaggio veniva dichiarato come malloc sizeof(mex), con mex = message* mex. sizeof(message*) != sizeof(message), rispettivamente 8 e 48.
+
+
+- se inserivo 1025 messaggi, seg fault lato server: è allocato per 1024.
+	----> fixed: aggiunto check su position appena prendo il gettone

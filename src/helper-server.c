@@ -19,8 +19,12 @@
 
 void send_file_db(int acc_sock){
 	FILE *fd;
-	char buffer[MAX_USR_LEN + 2], *ret;
+	char *buffer, *ret;
 	int found, i = 0;
+
+	buffer = malloc(sizeof(char) * (MAX_USR_LEN + 2));
+	if (buffer == NULL)
+		error(27);
 
 	fd = fopen(".db/list.txt", "r");
 	if (fd == NULL)
@@ -33,15 +37,14 @@ void send_file_db(int acc_sock){
 			break;
 		write_int(acc_sock, found, 383);
 		write_string(acc_sock, buffer, 385);
-		printf("%d. %s.%s\n\n", i, ret,buffer);
+	//	printf("%d. %s.%s.\n\n", i, ret,buffer);
 		i++;
 	}
 	
-	      audit;	
 	found = 0;
 	write_int(acc_sock, found, 383);
 	fclose(fd);
-	audit;
+	free(buffer);
 }
 
 
@@ -90,7 +93,7 @@ message** inizializza_server(){ //sequenza di messaggi
 	message **mex_list;
 //	message *mex;
 
-	mex_list = (message**) malloc(sizeof(message) * MAX_NUM_MEX);
+	mex_list = (message**) malloc(sizeof(message*) * MAX_NUM_MEX);
 	if (mex_list == NULL){
 		perror("error initializing mex list");
 		exit(EXIT_FAILURE);
@@ -129,7 +132,7 @@ message** inizializza_server(){ //sequenza di messaggi
 
 int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last, int *server, int sem_write, int *my_mex, int *my_new_mex, char *client_usr, int flag){ //flag == 1 means its a write back
 	char *usr_destination, *usr_sender, *object, *text, *destination_file;
-	int i, len, fileid, exist, get_out, retry;
+	int i, len, fileid, exist, get_out, retry, can_i_get = 1;
 	struct sembuf sops;
 
 	sops.sem_flg = 0;
@@ -138,9 +141,9 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	
 	if (!flag)
 		send_file_db(acc_sock);
-start:
-
+read_dest:
 	/*	READING USR_DESTINATION	*/
+
 	if(read_string(acc_sock, &usr_destination, 199))
 		return -1;
 
@@ -155,15 +158,44 @@ start:
 			if (retry) //user wants to go back to main menu
 				return 1;
 			else
-				goto start;
+				goto read_dest;
 		}
 			
 		else
 			return 1;
 	}
+
+	while (i < 4){
+		read_int(acc_sock, &retry, 179);
+		switch(retry){  
+/*se inserisco la possibilità di tornare a un campo precedente, devo implementare un altro caso in questo switch, in cui i viene decrementato*/
+			case -1:
+				i++;
+				break;
+			case 1:
+				return 1;
+			default:
+				break;
+		}
+	}
+
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
+	
+	if (*position == MAX_NUM_MEX){
+		can_i_get = -1;
+		printf("impossibile ricevere messaggio: spazio non disponibile\n");
+		write_int(acc_sock, can_i_get, 174);
+		/*incremento del semaforo:*/		
+        	sops.sem_op = 1;
+	        if (semop(sem_write, &sops, 1) == -1)
+        	        error(178);
+		return 1; //back to main menu
+	}
+
+	/*WRITING IT WAS OK*/
+	write_int(acc_sock, can_i_get, 182);
 
 	message *mex = mess_list[*position];
 	if (!get_mex(acc_sock, mex, 0)){
@@ -328,17 +360,11 @@ is_read_op:
                         case 3:
 
                                 ret = ricevi_messaggio(acc_sock, message_list, position, last, server, sem_write, my_mex, my_new_mex, client_usrname, 0);
-                                if (ret >= 0)
-                                        printf("messaggio ricevuto con successo\n");
-                                else{
+                                if (ret < 0){
 					//log_out(client_usrname);
                                 	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
-
-				//sending if it was ok
-                                write_int(acc_sock, ret, sizeof(ret));
-
 /*                              printf("il messaggio inserito è:\n\n");
                                 stampa_messaggio(message_list[*position - 1]);//stampo accedendo alla lista*/
                                 break;
@@ -421,7 +447,7 @@ check_operation:
 			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
-
+		//(*usr)[strlen(*usr)] = '\0';
                 /*      READING IF RETRY GETTING PASSWORD       */
                 check_pw_restart:
                 if (read_int(acc_sock, &retry, 344)){
@@ -899,7 +925,6 @@ void log_out(char *usr){
                 error(1076);
 
         sprintf(file_name, ".db/%s.txt", usr);
-
         len = strlen(file_name);
         if ((fileid = open(file_name, O_RDWR, 0666)) == -1)
                 error(1082);

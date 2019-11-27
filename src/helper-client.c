@@ -211,6 +211,24 @@ usr_will:
 
 }
 
+int operazioni_disponibili_invio(){
+	int retry;	
+retry:
+        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+	        printf("|                                                                                    |\n");
+	        printf("|   0. Riprovare				    				     |\n");
+	        printf("|   1. Anullare e tornare al menù principale					     |\n");
+	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+		if (scanf("%d", &retry) == -1 && errno != EINTR)
+			error(220);
+		if (retry < 0 || retry > 1){
+			printf("operazione non valida. premi un tasto per riprovare\n");
+			fflush(stdin);
+			goto retry;
+		}
+		return retry;
+}
+
 void invia_messaggio(int sock_ds, char *sender){
         char *destination, *obj, *mes;
         int len_dest, len_send, len_obj, len_mess, ret, retry;
@@ -235,13 +253,28 @@ void invia_messaggio(int sock_ds, char *sender){
 	if ((mex = (message*) malloc(sizeof(message))) == NULL)
 		error(183);
 
-restart:
+	mex -> usr_sender = sender;
+get_dest:
         //GETTING DATA AND THEIR LEN
         printf("username (max %d caratteri):\t", MAX_USR_LEN);
         if (scanf("%ms", &(mex -> usr_destination)) == -1 && errno != EINTR)
                 error(470);
 
         fflush(stdin);
+
+	if (strlen(mex -> usr_destination) > MAX_USR_LEN){
+		printf("username destinatario troppo lungo.\n");
+		retry = operazioni_disponibili_invio();	
+		write_int(sock_ds, retry, 221);
+		
+		if (retry)
+			return;
+		else
+			goto get_dest;
+	}
+	retry = -1;
+	write_int(sock_ds, retry, 221);
+
 
         //invio destinatario
         write_string(sock_ds, mex -> usr_destination, 633);
@@ -250,36 +283,20 @@ restart:
         read_int(sock_ds, &ret, 539);
 
         if (!ret){
-retry:
                 printf("destinatario non esiste.\n\n"); 
-        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
-	        printf("|                                                                                    |\n");
-	        printf("|   0. Riprovare				    				     |\n");
-	        printf("|   1. Anullare e tornare al menù principale					     |\n");
-	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-		if (scanf("%d", &retry) == -1 && errno != EINTR)
-			error(220);
-		if (retry < 0 || retry > 1){
-			printf("operazione non valida. premi un tasto per riprovare\n");
-			fflush(stdin);
-			goto retry;
-		}
+
+		retry = operazioni_disponibili_invio();
 		write_int(sock_ds, retry, 221);
 		
 		if (retry)
 			return;
 		else
-			goto restart;
+			goto get_dest;
         }
+	retry = -1;
+	write_int(sock_ds, retry, 221);
 
-        len_dest = strlen(mex -> usr_destination);
-        if (len_dest > MAX_USR_LEN){
-                printf("usrname destinatario inserito troppo lungo. per favore riprova.\n\n");
-                goto restart;
-        }
-
-	mex -> usr_sender = sender;
-
+get_obj:
         printf("\n");
 	printf("object (max %d caratteri):\t", MAX_OBJ_LEN);
         if (scanf(" %m[^\n]", &(mex -> object)) == -1 && errno != EINTR)
@@ -289,27 +306,52 @@ retry:
 
         len_obj = strlen(mex -> object);
         if (len_obj > MAX_OBJ_LEN){
-                printf("oggetto inserito troppo lungo. per favore riprova.\n\n");
-                goto restart;
-        }
+                printf("oggetto inserito troppo lungo.\n");
 
-        printf("\n.....................................................................................\n\n");
-        printf("text: (max %d caratteri):\t", MAX_MESS_LEN);
+		retry = operazioni_disponibili_invio();
+		write_int(sock_ds, retry, 221);
+		
+		if (retry)
+			return;
+		else
+	                goto get_obj;
+        }
+	retry = -1;
+	write_int(sock_ds, retry, 221);
+
+get_mess:
+        printf("\n");
+	printf("text: (max %d caratteri):\t", MAX_MESS_LEN);
         if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
                 error(497);
         fflush(stdin);
 
         len_mess = strlen(mex -> text);
         if (len_mess > MAX_MESS_LEN){
-                printf("messaggio inserito troppo lungo. per favore riprova.\n\n");
-                goto restart;
+                printf("messaggio inserito troppo lungo.\n");
+		retry = operazioni_disponibili_invio();
+		write_int(sock_ds, retry, 221);
+		
+		if (retry)
+			return;
+		else
+	     		goto get_mess;
         }
+	retry = -1;
+	write_int(sock_ds, retry, 221);
 
-        //SENDING DATA
-	send_mex(sock_ds, mex, 0);
+	/*READING IF CAN WRITE*/
+        read_int(sock_ds, &ret, 567);
+	if (ret < 0)	
+		printf("operazione temporaneamente fuori servizio. riprovare più tardi\n\n");
+/*	elseV
+		printf("messaggio ricevuto correttamente\n\n\n");*/
 
-        printf("\n\ninvio del messaggio avvenuto con successo. attendo conferma ricezione...\n");
-
+	else{
+	        //SENDING DATA
+		send_mex(sock_ds, mex, 0);
+	        printf("\n\ninvio del messaggio avvenuto con successo.\n");
+	}
 	free(mex);
 }
 
@@ -390,12 +432,6 @@ select_operation:
 
                 case 3:
                         invia_messaggio(sock_ds, my_usrname);
-        		read_int(sock_ds, &ret, 567);
-			//reading if it was ok
-		        if (ret < 0)	
-                		printf("ricezione fallita. riprovare.\n\n\n");
-		        else
-                		printf("messaggio ricevuto correttamente\n\n\n");
                         break;
                 case 4:
                         cancella_messaggio(sock_ds, code);
