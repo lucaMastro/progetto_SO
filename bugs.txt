@@ -1,6 +1,3 @@
-1. un messaggio con oggetto troppo lungo viene inviato comunque: mi ritorna all'inserimento del destinatario, ma poi lo invia
-
-2. manca un chekc su numeri negativi: non possono essere minori -9999 a causa delle cifre 
 
 NON FISSI:
 
@@ -111,3 +108,10 @@ se:
 
 - se inserivo 1025 messaggi, seg fault lato server: è allocato per 1024.
 	----> fixed: aggiunto check su position appena prendo il gettone
+
+- un messaggio con oggetto troppo lungo viene inviato comunque: mi ritorna all'inserimento del destinatario, ma poi lo invia
+	----> fixed: inserita interfaccia su ogni campo del messaggio, con possibilità di annullare ecc. 
+
+
+- manca un check su numeri negativi: non possono essere minori -9999 a causa delle cifre 
+	----> unico caso verificato era quello di "elimina_messaggio". aggiustato inviando -1

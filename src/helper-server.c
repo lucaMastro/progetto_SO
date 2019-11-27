@@ -139,11 +139,24 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	sops.sem_num = 0;
 	sops.sem_op = -1;
 	
-	if (!flag)
+	if (!flag){
 		send_file_db(acc_sock);
 read_dest:
-	/*	READING USR_DESTINATION	*/
+		//CHECKING ERROR ABOUT USR_LEN:
+		if(read_int(acc_sock, &retry, 146))
+			return -1;
 
+		switch(retry){
+			case 0:
+				goto read_dest;
+			case 1:
+				return 1;
+			default:
+				break;
+		}
+	}
+
+	/*	READING USR_DESTINATION	*/
 	if(read_string(acc_sock, &usr_destination, 199))
 		return -1;
 
@@ -152,7 +165,77 @@ read_dest:
 
 	/*	SENDING IF EXISTS	 */
 	write_int(acc_sock, exist, 269);
-	if (!exist){
+
+	if (!flag){
+		//CHECKING USR_WILL. se exist == 0, retry non può essere -1
+		if (read_int(acc_sock, &retry, 146))
+			return -1;
+
+		if (!flag){
+			switch(retry){
+				case 0:
+					goto read_dest;
+				case 1:
+					return 1;
+				default:
+					break;
+			}
+		}
+
+	read_obj:
+		//CHECKING ERROR ABOUT OBJ_LEN:
+		if (read_int(acc_sock, &retry, 146))
+			return -1;
+		if (!flag){
+			switch(retry){
+				case 0:
+					goto read_dest;
+				case 1:
+					goto read_obj;
+				case 2:
+					return 1;
+				default:
+					break;
+			}
+		}
+	}
+
+	else{//write back version
+		if (!exist)
+			return 1;
+	}	
+
+read_mess:
+	//CHECKING ERROR ABOUT MESS_LEN:
+	if (read_int(acc_sock, &retry, 146))
+		return -1;
+
+	if (!flag){
+		switch(retry){
+			case 0:
+				goto read_dest;
+			case 1:
+				goto read_obj;
+			case 2:
+				goto read_mess;
+			case 3:
+				return 1;
+			default:
+				break;
+		}
+	}
+	else{//CHECKING ERROR ABOUT MESS_LEN IN A WB CALL	
+		switch(retry){
+			case 0:
+				goto read_mess;
+			case 1:
+				return 1;
+			default:
+				break;
+		}
+	}
+	
+/*	if (!exist){
 		if (!flag){ //non è un write back: leggo se riprovare
 			read_int(acc_sock, &retry, 146);
 			if (retry) //user wants to go back to main menu
@@ -163,21 +246,8 @@ read_dest:
 			
 		else
 			return 1;
-	}
+	}*/
 
-	while (i < 4){
-		read_int(acc_sock, &retry, 179);
-		switch(retry){  
-/*se inserisco la possibilità di tornare a un campo precedente, devo implementare un altro caso in questo switch, in cui i viene decrementato*/
-			case -1:
-				i++;
-				break;
-			case 1:
-				return 1;
-			default:
-				break;
-		}
-	}
 
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
@@ -186,6 +256,7 @@ read_dest:
 	if (*position == MAX_NUM_MEX){
 		can_i_get = -1;
 		printf("impossibile ricevere messaggio: spazio non disponibile\n");
+		//WRITING THE BAD NEW
 		write_int(acc_sock, can_i_get, 174);
 		/*incremento del semaforo:*/		
         	sops.sem_op = 1;
@@ -253,16 +324,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 
 			
                         write_int(acc_sock, found, 219);
-  		
-		/*
-			write_int(acc_sock, mex -> is_new, 222);
-                        write_string(acc_sock, mex -> usr_sender, 225);
-                        write_string(acc_sock, mex -> object, 723);
-                        write_string(acc_sock, mex -> text, 727);
-                        write_int(acc_sock, i, 731); //*(mex -> position), 731);
-			write_int(acc_sock, mex -> is_sender_deleted, 224);*/
-
-
+  					
 
 			/*	SENDING MEX	*/
 			send_mex(acc_sock, mex, 1);
@@ -718,9 +780,9 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 write_int(acc_sock, compl, 415);
         }
         else{//not is mine.
-                if (mode >= 0) //trying deleting again the same mex after read it.
+    /*            if (mode >= 0) //trying deleting again the same mex after read it: non più possibile
                         printf("messaggio già eliminato\n");
-                else
+                else*/
                         goto another_code;
         }
 

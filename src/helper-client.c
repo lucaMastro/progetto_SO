@@ -65,29 +65,7 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
 
      	if ((mex = (message*) malloc(sizeof(message))) == NULL)
                 error(24);
-	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
-/*	mex -> position = 0;
-	mex -> is_sender_deleted = 0;
-	mex -> is_new = 0;*/
-
-	/*
-        if ((mex -> usr_destination = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-                error(27);
-//        bzero(mex -> usr_destination, MAX_USR_LEN);
-
-        if ((mex -> usr_sender = malloc(sizeof(char) * MAX_USR_LEN)) == NULL)
-                error(30);
-  //      bzero(mex -> usr_sender, MAX_USR_LEN);
-
-        if ((mex -> object = malloc(sizeof(char) * MAX_OBJ_LEN)) == NULL)
-                error(33);
-    //    bzero(mex -> object, MAX_OBJ_LEN);
-
-        if ((mex -> text = malloc(sizeof(char) * MAX_MESS_LEN)) == NULL)
-                error(36);
-      //  bzero(mex -> text, MAX_MESS_LEN);
-	
-*/
+//	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
 start:
         
 	read_int(sock_ds, &found, 95);
@@ -102,15 +80,6 @@ start:
 		minimal_code = 0;
 		can_i_wb = 1;
 
-/*
-                read_int(sock_ds, &(mex -> is_new), 101);
-                read_string(sock_ds, &(mex ->usr_sender), 108);
-                read_string(sock_ds, &(mex -> object), 112);
-                read_string(sock_ds, &(mex -> text), 116);
-                read_int(sock_ds, &(mex -> position), 119);
-		read_int(sock_ds, &(mex -> is_sender_deleted), 107);                
-                strcpy(mex -> usr_destination, my_usrname);
-*/
 		get_mex(sock_ds, mex, 1); 
 
 		/*PRINTING MESSAGE*/
@@ -185,9 +154,12 @@ usr_will:
 			default:
 				break;
                 }
+		audit;
 		if (!leave){ //updating found
 			read_int(sock_ds, &found, 156);
+			printf("%d\n", found);
 		}
+		audit;
 	}
 	
         if (!leave){
@@ -211,17 +183,22 @@ usr_will:
 
 }
 
-int operazioni_disponibili_invio(){
+int operazioni_disponibili_invio(int mode){
 	int retry;	
 retry:
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
 	        printf("|                                                                                    |\n");
-	        printf("|   0. Riprovare				    				     |\n");
-	        printf("|   1. Anullare e tornare al menù principale					     |\n");
+	        printf("|   0. Riprovare a inserire il destinatario	    				     |\n");
+		if (mode >= 1)
+			printf("|   1. Riprovare a inserire l'oggetto	 	 				     |\n");
+		if (mode == 2)
+		       	printf("|   2. Riprovare a inserire il messaggio	    				     |\n");
+
+	        printf("|   %d. Anullare e tornare al menù principale					     |\n", mode + 1);
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 		if (scanf("%d", &retry) == -1 && errno != EINTR)
 			error(220);
-		if (retry < 0 || retry > 1){
+		if (retry < 0 || retry > mode + 1){
 			printf("operazione non valida. premi un tasto per riprovare\n");
 			fflush(stdin);
 			goto retry;
@@ -234,22 +211,22 @@ void invia_messaggio(int sock_ds, char *sender){
         int len_dest, len_send, len_obj, len_mess, ret, retry;
 	message *mex;
 
-        printf("\e[1;1H\e[2J");
-        printf(".....................................................................................\n");
-        printf(".....................................................................................\n");
-        printf("................__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _..............\n");
-        printf("...............|                                                       |.............\n");
-	printf("...............|                 GESTORE INVIO MESSAGGI                |.............\n");
-        printf("...............|__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _|.............\n");
-        printf(".....................................................................................\n");
-        printf(".....................................................................................\n");
-        printf(".....................................................................................\n\n");
-	printf("\t\tUtenti a cui è possibile inviare un messaggio:\n");
-	get_file_db(sock_ds);
-	printf("\n");
-        printf(".....................................................................................\n");
-        printf(".....................................................................................\n\n");
-
+	        printf("\e[1;1H\e[2J");
+        	printf(".....................................................................................\n");
+	        printf(".....................................................................................\n");
+        	printf("................__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _..............\n");
+	        printf("...............|                                                       |.............\n");
+		printf("...............|                 GESTORE INVIO MESSAGGI                |.............\n");
+	        printf("...............|__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ _|.............\n");
+        	printf(".....................................................................................\n");
+	        printf(".....................................................................................\n");
+        	printf(".....................................................................................\n\n");
+		printf("\t\tUtenti a cui è possibile inviare un messaggio:\n");
+		get_file_db(sock_ds);
+		printf("\n");
+        	printf(".....................................................................................\n");
+	        printf(".....................................................................................\n\n");
+	
 	if ((mex = (message*) malloc(sizeof(message))) == NULL)
 		error(183);
 
@@ -262,9 +239,11 @@ get_dest:
 
         fflush(stdin);
 
+
+	//CHECK SULLA LUNGHEZZA
 	if (strlen(mex -> usr_destination) > MAX_USR_LEN){
 		printf("username destinatario troppo lungo.\n");
-		retry = operazioni_disponibili_invio();	
+		retry = operazioni_disponibili_invio(0);	
 		write_int(sock_ds, retry, 221);
 		
 		if (retry)
@@ -285,7 +264,7 @@ get_dest:
         if (!ret){
                 printf("destinatario non esiste.\n\n"); 
 
-		retry = operazioni_disponibili_invio();
+		retry = operazioni_disponibili_invio(0);
 		write_int(sock_ds, retry, 221);
 		
 		if (retry)
@@ -308,13 +287,17 @@ get_obj:
         if (len_obj > MAX_OBJ_LEN){
                 printf("oggetto inserito troppo lungo.\n");
 
-		retry = operazioni_disponibili_invio();
+		retry = operazioni_disponibili_invio(1);
 		write_int(sock_ds, retry, 221);
 		
-		if (retry)
-			return;
-		else
-	                goto get_obj;
+		switch (retry){
+			case 0:
+				goto get_dest;
+			case 1:
+				goto get_obj;
+			case 2:
+				return;
+		}	
         }
 	retry = -1;
 	write_int(sock_ds, retry, 221);
@@ -329,13 +312,19 @@ get_mess:
         len_mess = strlen(mex -> text);
         if (len_mess > MAX_MESS_LEN){
                 printf("messaggio inserito troppo lungo.\n");
-		retry = operazioni_disponibili_invio();
+		retry = operazioni_disponibili_invio(2);
 		write_int(sock_ds, retry, 221);
 		
-		if (retry)
-			return;
-		else
-	     		goto get_mess;
+		switch (retry){
+			case 0:
+				goto get_dest;
+			case 1:
+				goto get_obj;
+			case 2:
+				goto get_mess;
+			case 3:
+				return;
+		}	
         }
 	retry = -1;
 	write_int(sock_ds, retry, 221);
@@ -672,7 +661,8 @@ void close_client(int sock_ds){
 }
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi
-        int is_mine, ret = 0, again, fine, code;
+        int is_mine, ret = 0, again, fine;
+	long code;
 	
         /*SCRIVO MODE*/
         write_int(sock_ds, mode, 326);
@@ -701,24 +691,26 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	        printf("|   *Inserisci un numero negativo per annullare e tornare al menù principale	     |\n");
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 		
-                if (scanf("%d", &code) == -1 && errno != EINTR)
+                if (scanf("%ld", &code) == -1 && errno != EINTR)
                         error(308);
                 fflush(stdin);
 
 		if (code > MAX_NUM_MEX)
 			goto not_acc; //just writing that "the code isnt accepted", no writing why.
 
-                /*SCRIVO CODE*/
-                write_int(sock_ds, code, 328);
                 if (code < 0){
+			code = -1; //SET THE CODE = -1: I FIX THE BUG IF USERS INSERT -999999
+                	write_int(sock_ds, code, 328);
                         printf("operazione annullata con successo\n");
                         goto exit_lab;
                 }
+                /*SCRIVO CODE*/
+                write_int(sock_ds, code, 328);
         }
 	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
 
-        if (is_mine == 1 && code <= MAX_NUM_MEX){
+        if (is_mine == 1){ //&& code <= MAX_NUM_MEX){ CHECK GIÀ FATTO
                 printf("codice accettato. attendi conferma eliminazione\n");
 
                 /*READ IF ELIMINATION WAS OK*/
@@ -733,17 +725,17 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
         }
         else{
 		not_acc:
-                if (mode >= 0)
-                        printf("messaggio già eliminato\n");
-                else{
+ /*               if (mode >= 0)	//NON È POSSIBILE CHE SI VERIFICHI: UNA VOLTA CANCELLATO UN MESS, SI PROCEDE NELLA RICERCA IN "GESTORE_LETTURE"
+                        printf("messaggio già eliminato\n");*/ 	
+                //else{
                         printf("Errore: non hai messaggi ricevuti associati al codice inserito. Premi un tasto e riprova.\n");
 			fflush(stdin);
                         goto another_code;
-                }
+                //}
         }
 
         /*CHECKING USR'S WILL. eseguire solo se mode < 0*/
-        if (mode < 0){
+        if (mode < 0){ //IN QUESTO MODO BLOCCO ELIMINAZIONI MULTIPLE DURANTE LA "GESTORE_LETTURE"
 usr_will:
 	        printf(".....................................................................................\n");	
         	printf(" ______ ________ ________ __Altre Operazioni Disponibili__ ________ ________ _____ _\n");
@@ -768,9 +760,30 @@ exit_lab:
         return ret;
 }
 
+
+
+int operazioni_disponibili_wb(){
+	int retry;	
+retry:
+        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+	        printf("|                                                                                    |\n");
+		printf("|   0. Riprovare a inserire il messaggio	    				     |\n");
+
+	        printf("|   1. Anullare e tornare al menù principale					     |\n");
+	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+		if (scanf("%d", &retry) == -1 && errno != EINTR)
+			error(220);
+		if (retry < 0 || retry > 1){
+			printf("operazione non valida. premi un tasto per riprovare\n");
+			fflush(stdin);
+			goto retry;
+		}
+		return retry;
+}
+
 int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         char *text, *re_obj;
-        int len = strlen(object), ret;
+        int len = strlen(object), ret, retry;
 	message *mex;
 
 	//invio destinatario
@@ -794,6 +807,7 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
         sprintf(mex -> object, "RE: %s", object);
 
+get_mex:
         /*GETTING THE TEXT FROM USR*/
         printf("inserisci il messaggio:\n");
         if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
@@ -801,8 +815,30 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
         fflush(stdin);
 
-        /*SENDING MEX*/
-	send_mex(sock_ds, mex, 0);
+	if (strlen(mex -> text) > MAX_MESS_LEN){
+                printf("messaggio inserito troppo lungo.\n");
+		retry = operazioni_disponibili_wb();	
+		write_int(sock_ds, retry, 221);
+
+		if (retry)
+			return 1;
+		else
+			goto get_mex;
+	}
+	retry = -1;
+	write_int(sock_ds, retry, 221);
+	
+	/*READING IF THE MEX CAN BE STORED*/
+
+        read_int(sock_ds, &ret, 567);
+	if (ret < 0)	
+		printf("operazione temporaneamente fuori servizio. riprovare più tardi\n\n");
+
+	else{
+	        //SENDING DATA
+		send_mex(sock_ds, mex, 0);
+	        printf("\n\ninvio del messaggio avvenuto con successo.\n");
+	}
 
 	free(mex);
         return 1;

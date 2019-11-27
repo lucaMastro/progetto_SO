@@ -1,6 +1,5 @@
-//#include <unistd.h>             /*  for ssize_t data type  */
-
 #define MAX_NUM_MEX 1024 //memorizzerò al massimo 1024 messaggi
+#define MAX_NUM_USERS 100	//max numero di utenti
 #define LISTENQ        (1024)   /*  Backlog for listen()   */
 #define MAX_USR_LEN 20
 #define MAX_PW_LEN 10
