@@ -23,26 +23,27 @@ int handler_sock;
 void get_file_db(int sock_ds){
 
 	char *buffer, *token;
-	int found;
+	int found, is_first = 1;
 
-	buffer = malloc(sizeof(char) * (MAX_USR_LEN +1));
+	buffer = (char*) malloc(sizeof(char) * (MAX_USR_LEN +1));
 	if (buffer == NULL)
 		error(195);
 
 	printf("[");
-	read_int(sock_ds, &found, 194);
 	while (1){
-		bzero(buffer, MAX_USR_LEN + 2);
-		read_string(sock_ds, &buffer, 197);
-
-		token = strtok(buffer, "\n");
-		printf("%s", token);
-
 		/* UPDATING IF FOUND */
 		read_int(sock_ds, &found, 194);
 		if (!found)
 			break;
-		printf(", ");
+
+		if (!is_first)
+			printf(", ");
+
+		bzero(buffer, MAX_USR_LEN + 1);
+		read_string(sock_ds, &buffer, 197);
+
+		printf("%s", buffer);
+		is_first = 0;
 	}
 	printf("]");
 
@@ -154,12 +155,9 @@ usr_will:
 			default:
 				break;
                 }
-		audit;
 		if (!leave){ //updating found
 			read_int(sock_ds, &found, 156);
-			printf("%d\n", found);
 		}
-		audit;
 	}
 	
         if (!leave){
@@ -795,15 +793,15 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
                 return 0;
         }
 
-	if ((mex = malloc(sizeof(message))) == NULL)
+	if ((mex = (message*) malloc(sizeof(message))) == NULL)
 		error(680);
 
 	mex -> usr_sender = my_usr;
 	mex -> usr_destination = usr_dest;
         /*CREATING THE STRING:  RE: <object>    */
-        if ((mex -> object = malloc(sizeof(char) * (len + 4))) == NULL)
+        if ((mex -> object = (char*) malloc(sizeof(char) * (len + 5))) == NULL)
                 error(1226);
-        bzero(mex -> object, len + 4);
+        bzero(mex -> object, len + 5);
 
         sprintf(mex -> object, "RE: %s", object);
 

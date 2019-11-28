@@ -18,11 +18,46 @@
 
 
 void send_file_db(int acc_sock){
+	int fileid, i, found = 1, sentinel;
+	char usr[MAX_USR_LEN + 1], curr;
+
+	bzero(usr, MAX_USR_LEN + 1);
+
+	fileid = open(".db/list.txt", O_RDONLY);
+	if (fileid == -1)
+		error(26);
+	while(1){
+		bzero(usr, MAX_USR_LEN + 1);
+		for (i = 0; i < MAX_USR_LEN + 1; i++){ //voglio leggere sempre anche lo \n
+			if ((sentinel = read(fileid, &curr, 1)) == -1)
+				error(32);
+			else if (sentinel == 0){
+				found = 0;
+				break;
+			}
+				
+			if (curr == '\n')
+				break;
+			else
+				usr[i] = curr;
+		}
+		write_int(acc_sock, found, 46);
+		if (!found)
+			break;
+		//ho letto una riga. la scrivo:	
+		write_string(acc_sock, usr, 45);
+	}
+	close(fileid);
+}
+
+
+/*
+void send_file_db(int acc_sock){
 	FILE *fd;
 	char *buffer, *ret;
 	int found, i = 0;
 
-	buffer = malloc(sizeof(char) * (MAX_USR_LEN + 2));
+	buffer = malloc(sizeof(char) * (MAX_USR_LEN + 2)); //[<username>, '\n', '\0']
 	if (buffer == NULL)
 		error(27);
 
@@ -40,13 +75,17 @@ void send_file_db(int acc_sock){
 	//	printf("%d. %s.%s.\n\n", i, ret,buffer);
 		i++;
 	}
-	
+	audit;	
 	found = 0;
+	audit;
 	write_int(acc_sock, found, 383);
+	audit;
 	fclose(fd);
+	audit;
 	free(buffer);
+	audit;
 }
-
+*/
 
 void update_db_file(char *deleting_string){
 	char string[MAX_USR_LEN + 1], del_string[MAX_USR_LEN + 1], c;
@@ -111,13 +150,7 @@ message** inizializza_server(){ //sequenza di messaggi
 		if (mex_list[i] == NULL)
 			error(27);
 
-	/*	if ((mex_list[i] -> is_new = (int *) malloc(sizeof(int))) == NULL)
-			error(53);*/
-	
 		mex_list[i] -> is_new = 1;
-
-	/*	if ((mex_list[i] -> position = (int*) malloc(sizeof(int))) == NULL)
-			error(56);*/
 
 		mex_list[i] -> position = i;
 
@@ -234,20 +267,6 @@ read_mess:
 				break;
 		}
 	}
-	
-/*	if (!exist){
-		if (!flag){ //non è un write back: leggo se riprovare
-			read_int(acc_sock, &retry, 146);
-			if (retry) //user wants to go back to main menu
-				return 1;
-			else
-				goto read_dest;
-		}
-			
-		else
-			return 1;
-	}*/
-
 
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
@@ -277,7 +296,7 @@ read_mess:
         	        error(158);
 		return -1;
 	}
-	stampa_messaggio(mex);
+//	stampa_messaggio(mex);
 
 	server[*position] = 1;
 
@@ -534,10 +553,10 @@ check_operation:
                 len_pw = strlen(pw);
 
                 /*      MAKING THE STRING: ".db/<name_user>.txt"        */
-                if ((file_name = malloc(sizeof(char) * (len_usr + 8) )) == NULL)
+                if ((file_name = (char*) malloc(sizeof(char) * (len_usr + 9) )) == NULL)
                         error(867);
 
-                bzero(file_name, (len_usr + 8));
+                bzero(file_name, (len_usr + 9));
                 sprintf(file_name, ".db/%s.txt", *usr);
 
                 if (operation == 1){
@@ -819,8 +838,8 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
         message *mex;
 
         len = strlen(usr);
-        dest = malloc(sizeof(char) * (len + 8));
-
+        dest = (char*) malloc(sizeof(char) * (len + 9));
+	bzero(dest, len+9);
         /*MAKE THE STRING .db/<usr>.txt */
         sprintf(dest, ".db/%s.txt", usr);
 
@@ -892,10 +911,10 @@ int check_destination(char **usr_destination, char **dest){
         if (dest != NULL)
                 copy = 1;
 
-        if ((destination_file = malloc(sizeof(char) * len)) == NULL)
+        if ((destination_file = (char*) malloc(sizeof(char) * (len + 1))) == NULL)
                 error(191);
 
-        bzero(destination_file, len);
+        bzero(destination_file, len + 1);
         sprintf(destination_file, ".db/%s.txt", *usr_destination);
         if (copy)
                 strcpy(*dest, destination_file);
@@ -931,7 +950,7 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
         char *dest_file, *new_pw;
 
         len = strlen(my_usr) + 8;
-        dest_file = malloc(sizeof(char) * len);
+        dest_file = (char *) malloc(sizeof(char) * (len + 1));
 
         if (dest_file == NULL)
                 error(1442);
@@ -983,9 +1002,9 @@ void log_out(char *usr){
         int len, fileid, i;
 
         len = strlen(usr);
-        if ((file_name = malloc(sizeof(char) * (len + 8))) == NULL)
+        if ((file_name = (char*) malloc(sizeof(char) * (len + 9))) == NULL)
                 error(1076);
-
+	bzero(file_name, len +9);
         sprintf(file_name, ".db/%s.txt", usr);
         len = strlen(file_name);
         if ((fileid = open(file_name, O_RDWR, 0666)) == -1)
