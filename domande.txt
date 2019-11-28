@@ -1,5 +1,4 @@
-1. va bene ignorare interamente ctrl+c?
-2. va bene inviare il mess spezzato?
-3. inserimento password non visibili..?
-4. come testare la concorrenza?
-5. come evitare che se "connection reset by peer" provochi crash del main thread
+1. inserimento password non visibili..?
+2. come testare la concorrenza?
+3. come evitare che se "connection reset by peer" provochi crash del main thread
+4. errore "free(): invalid next size (fast)": a cosa è dovuto in generale e in particolare, e cosa può causarlo nel mio caso 

@@ -59,14 +59,18 @@ void handler(int signo){
 }
 
 
-int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print
-        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos; 
+int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print, if flag == 2, just print the mex in code position
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos, code; 
         char *sender, *object, *text;
         message *mex;
 
      	if ((mex = (message*) malloc(sizeof(message))) == NULL)
                 error(24);
 //	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
+	
+	if (flag == 2)
+		goto get_code;
+	
 start:
         
 	read_int(sock_ds, &found, 95);
@@ -83,6 +87,7 @@ start:
 
 		get_mex(sock_ds, mex, 1); 
 
+get_code:
 		/*PRINTING MESSAGE*/
         	printf("\e[1;1H\e[2J");
 
@@ -94,73 +99,113 @@ start:
         	printf("...............|__ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ __|.............\n");
 	        printf("......................................................................................\n");
         	printf("......................................................................................\n");
+		if (flag == 2){
+        		printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+		        printf("|                                                                                    |\n");
+		        printf("|   *Inserisci il codice del messaggio da leggere				     |\n");
+	        	printf("|   *Inserisci un numero negativo per annullare e tornare al menù principale	     |\n");
+		        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+			if (scanf("%d", &code) == -1 && errno != EINTR)
+				error(105);
+			fflush(stdin);
+			if (code < 0){
+				printf("operazione annullata con successo.\n");
+				code = -1;
+				write_int(sock_ds, code, 72);
+				goto exit_lab;	
+			}
+			else if (code > MAX_NUM_MEX){
+				printf("codice non valido. premi un tasto e riprova: ");
+				fflush(stdin);
+				goto get_code;
+			}
+			else{//codice valido
+				write_int(sock_ds, code, 72);
+				//read if users has a mex in `code` position
+				read_int(sock_ds, &found, 124);
+				if (found){
+					printf("codice accettato.\n");
+					get_mex(sock_ds, mex, 1);
+				}
+				else{
+					printf("non hai messaggi associati a quel codice. premi un tasto per terminare: ");
+					fflush(stdin);
+					goto exit_lab;
+				}
+			}
+		}
+		
 		printf("..............................Il messaggio ricevuto è:................................\n");
 		//printf("%p, len = %d\n", mex, strlen( mex -> object));
                 stampa_messaggio(mex);
 	        printf("......................................................................................\n");	
-        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
-	        printf("|                                                                                    |\n");
+		if (flag != 2){
+	        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+		        printf("|                                                                                    |\n");
 
-                /*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
+                	/*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
 
-                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4 && !(mex -> is_sender_deleted))
-	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
-		else{
-	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
-			can_i_wb = 0;
-			minimal_code = 1;
-		}
+	                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4 && !(mex -> is_sender_deleted))
+		        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
+			else{
+	        		printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
+				can_i_wb = 0;
+				minimal_code = 1;
+			}
 
-        	printf("|   OPERAZIONE 1 : Cancellare il messaggio visualizzato				     |\n");
-	        printf("|   OPERAZIONE 2 : Cercare un altro messaggio					     |\n");
-        	printf("|   OPERAZIONE 3 : Interrompere la ricerca e tornare al menu principale		     |\n");
-	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-		printf("\nQuale operazione vuoi svolgere?\n");
+	        	printf("|   OPERAZIONE 1 : Cancellare il messaggio visualizzato				     |\n");
+		        printf("|   OPERAZIONE 2 : Cercare un altro messaggio					     |\n");
+        		printf("|   OPERAZIONE 3 : Interrompere la ricerca e tornare al menu principale		     |\n");
+		        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+			printf("\nQuale operazione vuoi svolgere?\n");
 
 usr_will:
-                /*CHECKING USR'S WILL*/
+                	/*CHECKING USR'S WILL*/
 
-                if (scanf("%d", &op) == -1 && errno != EINTR)
-                        error(140);
-                fflush(stdin);
+	                if (scanf("%d", &op) == -1 && errno != EINTR)
+        	                error(140);
+                	fflush(stdin);
 
-		if (op < minimal_code || op > 3){
-			printf("codice non valido. riprovare\n");
-			goto usr_will;
-		}
-		/*SENDING USR'S WILL*/
-		write_int(sock_ds, op, 116);
+			if (op < minimal_code || op > 3){
+				printf("codice non valido. riprovare\n");
+				goto usr_will;
+			}
+			/*SENDING USR'S WILL*/
+			write_int(sock_ds, op, 116);
 
-		switch (op){
-			case 0:
-				if (can_i_wb)				
-                                	write_back(sock_ds, mex -> object, my_usrname, mex -> usr_sender);
-/*				else{//non dovrebbe essere necessario
+			switch (op){
+				case 0:
+					if (can_i_wb)				
+                        	        	write_back(sock_ds, mex -> object, my_usrname, mex -> usr_sender);
+/*					else{//non dovrebbe essere necessario
 					printf("operazione non disponibile. riprovare\n");
 					goto usr_will;
-				}*/
-				printf("premi un tasto per continuare la ricerca:");
-				fflush(stdin);
-				break;
-			case 1:	
-	                        cancella_messaggio(sock_ds, mex -> position);
-				printf("premi un tasto per continuare la ricerca: ");
-				fflush(stdin);
-				break;
-/*			case 2:
-				break;*/
-			case 3:
-				leave = 1;
-				break;
-			default:
-				break;
-                }
-		if (!leave){ //updating found
-			read_int(sock_ds, &found, 156);
+					}*/
+					printf("premi un tasto per continuare la ricerca:");
+					fflush(stdin);
+					break;
+				case 1:	
+		                        cancella_messaggio(sock_ds, mex -> position);
+					printf("premi un tasto per continuare la ricerca: ");
+					fflush(stdin);
+					break;
+	/*			case 2:
+					break;*/
+				case 3:
+					leave = 1;
+					break;
+				default:
+					break;
+                	}
+			if (!leave){ //updating found
+				read_int(sock_ds, &found, 156);
+			}
 		}
+		else
+			goto exit_lab;
 	}
 	
-        if (!leave){
+        if (!leave){ //eseguito solo con flag == 0 o flag == 1.
 		if (isfirst && !flag)
         	        printf("non ci sono messaggi per te\n");
 	        else if (isfirst && flag)
@@ -176,6 +221,7 @@ usr_will:
 	                }
         	}
 	}
+exit_lab:
 	free(mex);
         return 0;
 
@@ -374,12 +420,13 @@ select_operation:
         printf("|                                                                                    |\n");
         printf("|   OPERAZIONE 1 : Lettura di tutti i messaggi ricevuti dall'utente                  |\n");
         printf("|   OPERAZIONE 2 : Lettura dei soli messaggi non letti                               |\n");
-        printf("|   OPERAZIONE 3 : Spedizione di un nuovo messaggio a uno qualunque degli utenti     |\n|\t\t   del sistema                                                       |\n");
-        printf("|   OPERAZIONE 4 : Cancellare messaggi ricevuti dall'utente                          |\n");
-        printf("|   OPERAZIONE 5 : Aggiornare lo stato del sistema (cerca se ci sono nuovi messaggi) |\n");
-        printf("|   OPERAZIONE 6 : Chiudere l'applicazione                                           |\n");
-        printf("|   OPERAZIONE 7 : Cancellare l'account                                              |\n");
-        printf("|   OPERAZIONE 8 : Cambia password                                                   |\n");
+        printf("|   OPERAZIONE 3 : Lettura di un messaggio in base al codice inserito                |\n");
+        printf("|   OPERAZIONE 4 : Spedizione di un nuovo messaggio a uno qualunque degli utenti     |\n|\t\t   del sistema                                                       |\n");
+        printf("|   OPERAZIONE 5 : Cancellare messaggi ricevuti dall'utente                          |\n");
+        printf("|   OPERAZIONE 6 : Aggiornare lo stato del sistema (cerca se ci sono nuovi messaggi) |\n");
+        printf("|   OPERAZIONE 7 : Chiudere l'applicazione                                           |\n");
+        printf("|   OPERAZIONE 8 : Cancellare l'account                                              |\n");
+        printf("|   OPERAZIONE 9 : Cambia password                                                   |\n");
         printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 
         printf("quale operazione vuoi svolgere?\n");
@@ -389,7 +436,7 @@ select_operation:
 
         fflush(stdin);
 
-        if (operation > 8 || operation < 0){
+        if (operation > 9 || operation < 0){
                 printf("operazione %d non valida\n", operation);
                 printf("premi un tasto per riprovare:");
                 fflush(stdin);
@@ -416,26 +463,29 @@ select_operation:
                         leggi_messaggi(sock_ds, my_usrname, 1);
                         check_upd = 1;
                         break;
-
-                case 3:
+		case 3:
+			leggi_messaggi(sock_ds, my_usrname, 2);
+			check_upd = 1;
+			break;
+                case 4:
                         invia_messaggio(sock_ds, my_usrname);
                         break;
-                case 4:
+                case 5:
                         cancella_messaggio(sock_ds, code);
 //                      check_upd = 1;
                         break;
-                case 5:
+                case 6:
                         read_int(sock_ds, &new_mex_avaiable, 1147);
                         printf("aggiornamento avvenuto con successo.\n");
                         break;
-                case 6:
-                        free(my_usrname);
-                        close_client(sock_ds);
                 case 7:
-                        delete_me(sock_ds);
                         free(my_usrname);
                         close_client(sock_ds);
                 case 8:
+                        delete_me(sock_ds);
+                        free(my_usrname);
+                        close_client(sock_ds);
+                case 9:
                         cambia_pass(sock_ds);
                         break;
                 default:
@@ -659,8 +709,7 @@ void close_client(int sock_ds){
 }
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi
-        int is_mine, ret = 0, again, fine;
-	long code;
+        int is_mine, ret = 0, again, fine, code;
 	
         /*SCRIVO MODE*/
         write_int(sock_ds, mode, 326);
@@ -689,7 +738,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	        printf("|   *Inserisci un numero negativo per annullare e tornare al menù principale	     |\n");
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 		
-                if (scanf("%ld", &code) == -1 && errno != EINTR)
+                if (scanf("%d", &code) == -1 && errno != EINTR)
                         error(308);
                 fflush(stdin);
 
@@ -698,7 +747,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 
                 if (code < 0){
 			code = -1; //SET THE CODE = -1: I FIX THE BUG IF USERS INSERT -999999
-                	write_int(sock_ds, code, 328);
+                	write_int(sock_ds, (int) code, 328);
                         printf("operazione annullata con successo\n");
                         goto exit_lab;
                 }
@@ -707,7 +756,6 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
         }
 	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
-
         if (is_mine == 1){ //&& code <= MAX_NUM_MEX){ CHECK GIÀ FATTO
                 printf("codice accettato. attendi conferma eliminazione\n");
 

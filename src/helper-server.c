@@ -132,7 +132,7 @@ message** inizializza_server(){ //sequenza di messaggi
 	message **mex_list;
 //	message *mex;
 
-	mex_list = (message**) malloc(sizeof(message*) * MAX_NUM_MEX);
+	mex_list = (message**) malloc(sizeof(message) * MAX_NUM_MEX);
 	if (mex_list == NULL){
 		perror("error initializing mex list");
 		exit(EXIT_FAILURE);
@@ -322,11 +322,25 @@ read_mess:
 
 int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int flag, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position){
         //server side
-        int i, found = 0, isnew, len_send, len_obj, len_text, pos, again, ret = 0, temp_last = *last, op, leave = 0;
+        int i, found = 0, isnew, len_send, len_obj, len_text, pos, again, ret = 0, temp_last = *last, op, leave = 0, code, starting_index = 0;
         message *mex;
 //      char *sender, *obj, *text;
 
-        for (i = 0; i < temp_last; i++){
+	if (flag == 2){
+		//devo leggere un solo messaggio, inviatomi dal client
+		if (read_int(acc_sock, &code, 331))
+			return -1;
+		if (code == -1)
+			return 1; //exit conditions
+		else{
+			//setto i valori in modo che nel for io legga un solo messaggio
+			starting_index = code;
+			temp_last = starting_index + 1;
+		}
+	}
+	printf("starting %d, end %d\n", starting_index, temp_last);
+
+        for (i = starting_index; i < temp_last; i++){
 		if (leave)
 			break;
 
@@ -336,48 +350,47 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 
                         //parsing dei campi del messaggio:
                         isnew = my_new_mex[i];
-                        if (isnew == 0 && flag)//messaggio letto, e voglio solo i nuovi
+                        if (isnew == 0 && flag == 1)//messaggio letto, e voglio solo i nuovi
                                 continue;
                         
                         found = 1;
-
-			
                         write_int(acc_sock, found, 219);
   					
-
 			/*	SENDING MEX	*/
 			send_mex(acc_sock, mex, 1);
 
                         mex -> is_new = 0;
                         found = 0;
-
-			/*READING USR_WILL*/
+			
+			if (flag != 2){
+				/*READING USR_WILL*/
 read_usr_will:
-                        if (read_int(acc_sock, &op, 613))
-				return -1;
-			switch(op){
-				case 0:
-					ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
-					break;
-
-				case 1:
-	                                ret = gestore_eliminazioni(acc_sock, usr, mess_list, my_mex, my_new_mex, server, sem_write, position, last);
-        	                        //goto read_usr_will;
-					break;
+        	                if (read_int(acc_sock, &op, 613))
+					return -1;
+				switch(op){
+					case 0:
+						ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
+						break;
+	
+					case 1:
+	        	                        ret = gestore_eliminazioni(acc_sock, usr, mess_list, my_mex, my_new_mex, server, sem_write, position, last);
+        	        	                //goto read_usr_will;
+						break;
 				
-				case 2:
-					break;
+					case 2:
+						break;
 				
-				case 3:
-					leave = 1;
-					break;
+					case 3:
+						leave = 1;
+						break;
+				}
 			}
+			else
+				leave = 1;
 		}
         }
         if (i == temp_last && leave == 0)
-                write_int(acc_sock, found, 615);
-	
-
+                write_int(acc_sock, found, 615);	
         return ret;
 }
 
@@ -394,7 +407,7 @@ int managing_usr_menu(int acc_sock, message **message_list, int *position, int *
         //sending ret
         write_int(acc_sock, ret, 714);
 
-        while (operation != 6){
+        while (operation != 7){
 
                 printf(".....................................................................................\n");
                 printf("\ngestore di: %s\n\n", client_usrname);
@@ -437,8 +450,10 @@ is_read_op:
                         case 2:
                                 flag = 1;
                                 goto is_read_op;
-
-                        case 3:
+			case 3:
+				flag = 2;
+				goto is_read_op;
+                        case 4:
 
                                 ret = ricevi_messaggio(acc_sock, message_list, position, last, server, sem_write, my_mex, my_new_mex, client_usrname, 0);
                                 if (ret < 0){
@@ -450,7 +465,7 @@ is_read_op:
                                 stampa_messaggio(message_list[*position - 1]);//stampo accedendo alla lista*/
                                 break;
 
-                        case 4:
+                        case 5:
                                 ret = gestore_eliminazioni(acc_sock, client_usrname, message_list, my_mex, my_new_mex, server, sem_write, position, last);
 				if (ret < 0){
                                 	//log_out(client_usrname);
@@ -459,20 +474,20 @@ is_read_op:
 				}
                                 break;
 
-                        case 5:
+                        case 6:
                                 ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
                                 write_int(acc_sock, ret, sizeof(ret));
                                 printf("stato aggiornato.\n");
                                 break;
-                        case 6:
+                        case 7:
                                 //log_out(client_usrname);
                                 close_server(acc_sock, client_usrname, 1);
 				return 1;
-                        case 7:
+                        case 8:
                                 delete_user(acc_sock, client_usrname, message_list, server, my_mex, last, position, sem_write);
                                 close_server(acc_sock, client_usrname, 0);
 				return 1;
-                        case 8:
+                        case 9:
                                 ret = mng_cambio_pass(acc_sock, client_usrname);
 				if (ret < 0){
                                 	close_server(acc_sock, client_usrname, 1);
@@ -745,7 +760,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 			return -1;
 	}
 
-      //printf("code = %d\n", code);
+     	printf("code = %d\n", code);
         if (code < 0){
                 printf("opearazione annullata client side\n\n");
                 return 1;

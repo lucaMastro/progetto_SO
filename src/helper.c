@@ -65,7 +65,7 @@ int read_string(int sock, char **string, int line){
 		error(62);
 	bzero(*string, len+1);
 	
-	if ( (len = read(sock, *string, len)) == -1)
+	if ( (read(sock, *string, len)) == -1)
 		error(line);
 //	printf("letto: %s.\n", *string);
 
@@ -75,7 +75,6 @@ int read_string(int sock, char **string, int line){
 void write_int(int sock, int num, int line){;
 	//IMPEDIRE L'INSERIMENTO DI NUMERI N TALI CHE:  |N| > 9999.
 	char *str_num = (char*) malloc(sizeof(char) * (MAX_CIFRE + 1)); //-9999
-
 	if (str_num == NULL){
 		printf("error helper at line: 77.\n");
 		error(line);

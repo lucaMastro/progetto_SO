@@ -1,4 +1,3 @@
-- leggere un solo messaggio inserendo il relativo codice
 
 aaaaaaaaaaaaaaaaaaaa
 
@@ -28,3 +27,6 @@ realizzazione:
 
 - i campi interi della struttura possono essere int, invece che int*? 
 	--> si
+
+
+- leggere un solo messaggio inserendo il relativo codice

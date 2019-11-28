@@ -1,14 +1,25 @@
+1. scenario:
+
+ho registrato a..*20, login, ctrl+c crash
+ho registrato a..*19, login, ctrl+c crash
+ho registrato a..*18, login, ctrl+c ok
+ho registrato a..*5, login,  ctrl+c ok
+ho provato a registrare a..*19 di nuovo, errore server-side:
+
+server: malloc.c:2401: sysmalloc: Assertion `(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)' failed.
+Annullato (core dump creato)
+
+
 
 NON FISSI:
 
-1. ogni tanto si verifica "invalid fastbin entry (free)", facendo risposte a messaggi.
 
-3. se invio un messaggio full (usr max lunghezza, text max lung, obj max len) e poi provo a inviare un altro mess, server crasha subito con: 
-"free(): invalid next size (normal)
+1. invio 2 messaggio full (usr max lunghezza, text max lung, obj max len) e uno easy, server crasha al momento della chiamata dell'operazione 6: 
+"free(): invalid next size (fast)
 Annullato (core dump creato)"
-succede solo se invio al client la lista degli utenti (send file db)
-	----> ho cambiato il metodo di quelle operazioni. ora lo stesso errore succede solo ogni tanto, e non più al successivo invio, ma in seguito all'operazione 6. il server viene però prima chiuso:
-		viene stampato server_side  "fine", inserita dopo il while infinito.
+	----> fixed cambiando l'inizializzazione del server: viene inizializzato con "(message**) malloc(sizeof(message)*max_num...)" invece che "(message**) malloc(sizeof(message*)*max_num...)".
+ho provato a rimettere "message*" nel sizeof del malloc, e funziona lo stesso.....
+SI VERIFICA IN ENTRAMBI I CASI
 
 
 ******************************************************************************
@@ -119,3 +130,12 @@ se:
 
 - manca un check su numeri negativi: non possono essere minori -9999 a causa delle cifre 
 	----> unico caso verificato era quello di "elimina_messaggio". aggiustato inviando -1
+
+
+- se invio un messaggio full (usr max lunghezza, text max lung, obj max len) e poi provo a inviare un altro mess, server crasha subito con: 
+"free(): invalid next size (normal)
+Annullato (core dump creato)"
+succede solo se invio al client la lista degli utenti (send file db)
+	----> fixed cambiando la logica di quelle operazioni
+
+

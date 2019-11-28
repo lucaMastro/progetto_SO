@@ -127,6 +127,8 @@ int main(int argc, char *argv[]){
 	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	server_len = sizeof(server_addr);
 	
+	client_len = sizeof(struct sockaddr_in);
+
 	ret = bind(sock_ds, (struct sockaddr*) &server_addr, server_len);
 	if (ret == -1){
 		perror("error binding server address");
@@ -161,17 +163,23 @@ int main(int argc, char *argv[]){
 		sops.sem_op = -1;
 		if (semop(sem_accept, &sops, 1) == -1) //aspetto che l'ultimo thread creato copi il valore di acc_sock nel suo TLS
 			error(146);
-
+		
+		printf("main in attesa di accept:\n\n");
 		acc_sock = accept(sock_ds, (struct sockaddr*) &client_addr, &client_len); 
 		if (acc_sock < 0){
 			perror("error accepting\n");
 			exit(EXIT_FAILURE);
 		} 
+	
 		printf("connessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
 	//	printf("\nconnessione avvenuta\n");
 	
 		if (pthread_create(&tid, NULL, thread_func, (void*) &acc_sock)){
 			perror("impossibile creare thread");
+			exit(EXIT_FAILURE);
+		}
+		if (pthread_detach(tid)){
+			perror("error detatching");
 			exit(EXIT_FAILURE);
 		}
 
@@ -240,5 +248,6 @@ void *thread_func(void *sock_ds){
 		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, &server, sem_write))
 			break;
 	}
-//	printf("fine\n");
+	printf("fine\n");
+	pthread_exit((void*) 0);
 }
