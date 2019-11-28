@@ -239,7 +239,13 @@ void *thread_func(void *sock_ds){
 	if (semop(sem_accept, &sops, 1) == -1)
 		error(211);
 	
+/*	if ((client_usrname = malloc(sizeof(char) * (MAX_USR_LEN + 1))) == NULL){
+		perror("impossibile allocare usrname");
+		exit(EXIT_FAILURE);
+	}*/
+
 	while(1){	
+		//bzero(client_usrname, MAX_USR_LEN + 1);
 		if (!managing_usr_registration_login(acc_sock, &client_usrname))
 			break;	
 		

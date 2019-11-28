@@ -486,6 +486,7 @@ is_read_op:
                         case 8:
                                 delete_user(acc_sock, client_usrname, message_list, server, my_mex, last, position, sem_write);
                                 close_server(acc_sock, client_usrname, 0);
+				free(client_usrname);
 				return 1;
                         case 9:
                                 ret = mng_cambio_pass(acc_sock, client_usrname);
@@ -1038,6 +1039,7 @@ void log_out(char *usr){
 
         close(fileid);
         free(file_name);
+	free(usr);
 }
 
 

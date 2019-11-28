@@ -1,13 +1,4 @@
-1. scenario:
-
-ho registrato a..*20, login, ctrl+c crash
-ho registrato a..*19, login, ctrl+c crash
-ho registrato a..*18, login, ctrl+c ok
-ho registrato a..*5, login,  ctrl+c ok
-ho provato a registrare a..*19 di nuovo, errore server-side:
-
-server: malloc.c:2401: sysmalloc: Assertion `(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)' failed.
-Annullato (core dump creato)
+1. problema in eiminazione un account e login di un altro (?)
 
 
 
@@ -20,6 +11,20 @@ Annullato (core dump creato)"
 	----> fixed cambiando l'inizializzazione del server: viene inizializzato con "(message**) malloc(sizeof(message)*max_num...)" invece che "(message**) malloc(sizeof(message*)*max_num...)".
 ho provato a rimettere "message*" nel sizeof del malloc, e funziona lo stesso.....
 SI VERIFICA IN ENTRAMBI I CASI
+
+
+2. scenario:
+
+ho registrato a..*20, login, ctrl+c crash
+ho registrato a..*19, login, ctrl+c crash
+ho registrato a..*18, login, ctrl+c ok
+ho registrato a..*5, login,  ctrl+c ok
+ho provato a registrare a..*19 di nuovo, errore server-side:
+
+server: malloc.c:2401: sysmalloc: Assertion `(old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)' failed.
+Annullato (core dump creato)
+
+
 
 
 ******************************************************************************
