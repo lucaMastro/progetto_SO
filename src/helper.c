@@ -121,7 +121,7 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 	if (read_string(sock, &one_string, 88))
 		return 0;
 
-	printf("onestring %s.\n", one_string);
+//	printf("onestring %s.\n", one_string);
 	/*PARSING*/
 	token = strtok(one_string, "\037");
 //	printf("%ld\n", strlen(one_string));
