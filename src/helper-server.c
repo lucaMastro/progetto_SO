@@ -309,7 +309,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 			temp_last = starting_index + 1;
 		}
 	}
-	printf("starting %d, end %d\n", starting_index, temp_last);
+//	printf("starting %d, end %d\n", starting_index, temp_last);
 
         for (i = starting_index; i < temp_last; i++){
 		if (leave)
@@ -812,7 +812,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 			return -1;
 	}
 
-     	printf("code = %d\n", code);
+    // 	printf("code = %d\n", code);
         if (code < 0){
                 printf("opearazione annullata client side\n\n");
                 return 1;

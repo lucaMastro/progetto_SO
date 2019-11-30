@@ -81,7 +81,7 @@ void write_int(int sock, int num, int line){;
 	}
 	bzero(str_num, MAX_CIFRE + 1);
 
-//	sprintf(str_num, "%d", num);
+	sprintf(str_num, "%d", num);
 //	printf("\n***WRITE INT: string_v: %s. int_v: %d, len = %d\n", str_num, num, strlen(str_num));
 
 	if (write(sock, str_num, MAX_CIFRE) == -1)
