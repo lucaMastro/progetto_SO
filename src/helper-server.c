@@ -567,6 +567,7 @@ check_operation:
 		}
 
                 len_pw = strlen(pw);
+		len_usr = strlen(*usr);
 
                 /*      MAKING THE STRING: ".db/<name_user>.txt"        */
                 if ((file_name = (char*) malloc(sizeof(char) * (len_usr + 9) )) == NULL)

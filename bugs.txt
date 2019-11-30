@@ -1,6 +1,48 @@
-1. problema in eiminazione un account e login di un altro (?)
+1. scenario:
+registro aa..*20
+registro a
+login a
+elimino account a
+loggo a*20
+chiudo app
+munmap_chunk(): invalid pointer
+Annullato (core dump creato)
+
+NOTA: stesso scenario con "b" al posto di a*20 funziona bene
 
 
+2. scenario:
+registro a
+login a
+elimino a
+registro a*20
+login a*20
+elimino a*20
+free(): invalid next size (fast)
+Annullato (core dump creato)
+
+NOTA: stesso scenario con "b" al posto di a*20 funziona bene
+
+
+3. scenario:
+registro a
+registro a*20
+login a
+elimino a
+login a*20
+elimino a*20
+file eliminato
+munmap_chunk(): invalid pointer
+Annullato (core dump creato)
+
+NOTA: non termina, a differenza degli altri
+NOTA: stesso scenario con "b" al posto di a*20 funziona bene
+
+
+
+
+
+aaaaaaaaaaaaaaaaaaaa
 
 NON FISSI:
 

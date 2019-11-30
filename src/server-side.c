@@ -30,9 +30,8 @@ int position = 0; //puntatore alla posizione minima in cui salvare un messaggio
 int fileid, last = 0; //puntatore alla prossima posizione in cui memorizzare un messaggio.
 int sem_write; //write sem's: synchronizing write of mess, deleting
 int server[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = 0}; //bitmask for messages of server. it must be shared
-int sem_accept;
 
-__thread int acc_sock;
+//__thread int acc_sock;
 __thread int my_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
 __thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
 
@@ -53,7 +52,7 @@ void handler_sigpipe(){
 
 int main(int argc, char *argv[]){
 	//porta come 1 parametro. aggiustare parsing
-	int sock_ds, ret, on = 1, i;
+	int sock_ds, *acc_sock, ret, on = 1, i;
 	char *port, *client_usrname;
 	struct sockaddr_in server_addr, client_addr;
 	int server_len, client_len, port_num, operation;
@@ -77,27 +76,6 @@ int main(int argc, char *argv[]){
 		perror("error secmtl");
 		exit(EXIT_FAILURE);
 	}
-
-	/*sem_accept è il semaforo per gestire gli accept del main, in modo che i vari thread abbiano 
-	 * il tempo di copiare l'handler acc_sock nel loro TLS.
-	 * il semaforo è così strutturato: [sem_main, sem_threads]
-	 * inizialmente: [1, 0]
-	 * il mainthread sblocca il secondo semaforo, ogni thread sblocca il main. sono entrambi binari */
-	
-	sem_accept = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666 );
-	if (sem_accept == -1){
-		perror("error initializing semaphore 2");
-		exit(EXIT_FAILURE);
-	}
-	if (semctl(sem_accept, 0, SETVAL, 1) == -1){
-		perror("error secmtl 2");
-		exit(EXIT_FAILURE);
-	}
-	if (semctl(sem_accept, 1, SETVAL, 0) == -1){
-		perror("error secmtl 2");
-		exit(EXIT_FAILURE);
-	}
-
 	/*message_list = malloc(sizeof(message) * MAX_NUM_MEX);
 	if (message_list == NULL){
 		perror("error initializing mex list");
@@ -159,13 +137,13 @@ int main(int argc, char *argv[]){
 
 	sops.sem_flg = 0;
 	while(1){
-		sops.sem_num = 0;
-		sops.sem_op = -1;
-		if (semop(sem_accept, &sops, 1) == -1) //aspetto che l'ultimo thread creato copi il valore di acc_sock nel suo TLS
-			error(146);
 		
+		acc_sock = (int *) malloc(sizeof(int));
+		if (acc_sock == NULL)
+			error(169);
+
 		printf("main in attesa di accept:\n\n");
-		acc_sock = accept(sock_ds, (struct sockaddr*) &client_addr, &client_len); 
+		*acc_sock = accept(sock_ds, (struct sockaddr*) &client_addr, &client_len); 
 		if (acc_sock < 0){
 			perror("error accepting\n");
 			exit(EXIT_FAILURE);
@@ -174,7 +152,7 @@ int main(int argc, char *argv[]){
 		printf("connessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
 	//	printf("\nconnessione avvenuta\n");
 	
-		if (pthread_create(&tid, NULL, thread_func, (void*) &acc_sock)){
+		if (pthread_create(&tid, NULL, thread_func, (void*) acc_sock)){
 			perror("impossibile creare thread");
 			exit(EXIT_FAILURE);
 		}
@@ -183,10 +161,6 @@ int main(int argc, char *argv[]){
 			exit(EXIT_FAILURE);
 		}
 
-		sops.sem_op = 1; //sblocco uno dei thread creati per copiare il valore di acc_sock nel suo TLS
-		sops.sem_num = 1;
-		if (semop(sem_accept, &sops, 1) == -1)
-		       error(162);	
 	}
 	printf("exit from while\n");
 	
@@ -223,21 +197,11 @@ void *thread_func(void *sock_ds){
 			
 	char *client_usrname;
 	struct sembuf sops;
+	int acc_sock;
 
-	sops.sem_num = 1;
-	sops.sem_flg = 0;
-	sops.sem_op = -1;
 
-	if (semop(sem_accept, &sops, 1) == -1)
-		       error(204);
-	//now i can copy	
 	acc_sock = *((int *)sock_ds);	
 
-	//i have copied: i can accept another client
-	sops.sem_op = 1;
-	sops.sem_num = 0;
-	if (semop(sem_accept, &sops, 1) == -1)
-		error(211);
 	
 /*	if ((client_usrname = malloc(sizeof(char) * (MAX_USR_LEN + 1))) == NULL){
 		perror("impossibile allocare usrname");
@@ -251,9 +215,10 @@ void *thread_func(void *sock_ds){
 		
 		printf("\n\nlogin effettuato da: %s\n\n", client_usrname);
 
-		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, &server, sem_write))
+		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, server, sem_write))
 			break;
 	}
 	printf("fine\n");
-	pthread_exit((void*) 0);
+//	pthread_exit((void*) 0);
+	free(sock_ds);
 }
