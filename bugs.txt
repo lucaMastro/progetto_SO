@@ -1,4 +1,3 @@
-1. se elimino un file non aggiora list.txt
 
 
 
@@ -197,3 +196,7 @@ NOTA: stesso scenario con "b" al posto di a*20 funziona bene
 	----> testato 2 volte e non succede. veniva allocato spazio per destination_file in fase di registrazione usando "len_usr" non inizializzata
 
 --------------------------------------------------------------------------------
+
+
+- se elimino un file non aggiora list.txt
+	----> succedeva solo con gli utenti di lunghezza 20. il buffer non era abbastanza grande per contenere sia '\n' che '\0'

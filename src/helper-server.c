@@ -54,46 +54,15 @@ void send_file_db(int acc_sock){
 }
 
 
-/*
-void send_file_db(int acc_sock){
-	FILE *fd;
-	char *buffer, *ret;
-	int found, i = 0;
-
-	buffer = malloc(sizeof(char) * (MAX_USR_LEN + 2)); //[<username>, '\n', '\0']
-	if (buffer == NULL)
-		error(27);
-
-	fd = fopen(".db/list.txt", "r");
-	if (fd == NULL)
-		error(378);
-	while (1){
-		found = 1;
-		bzero(buffer, MAX_USR_LEN + 2);
-		ret = fgets(buffer, MAX_USR_LEN + 2, fd);
-		if (ret == NULL || strcmp(ret, "\n") == 0)
-			break;
-		write_int(acc_sock, found, 383);
-		write_string(acc_sock, buffer, 385);
-	//	printf("%d. %s.%s.\n\n", i, ret,buffer);
-		i++;
-	}
-	audit;	
-	found = 0;
-	audit;
-	write_int(acc_sock, found, 383);
-	audit;
-	fclose(fd);
-	audit;
-	free(buffer);
-	audit;
-}
-*/
 
 void update_db_file(char *deleting_string){
-	char string[MAX_USR_LEN + 1], del_string[MAX_USR_LEN + 1], c;
+	char curr_usr[MAX_USR_LEN + 2], del_string[MAX_USR_LEN + 2], c;
 	int fileid, fileid2, i;
 
+	bzero(del_string, MAX_USR_LEN + 2);
+	sprintf(del_string, "%s\n", deleting_string);
+	
+	printf("deleting string: %s, its len: %d\n", deleting_string, strlen(deleting_string));
 	fileid = open(".db/list.txt", O_CREAT | O_RDWR, 0666);
 	if (fileid == -1)
 		error(7);
@@ -104,7 +73,7 @@ void update_db_file(char *deleting_string){
 
 	lseek(fileid, 0, SEEK_SET);
 	while (1){
-		bzero(string, MAX_USR_LEN);
+		bzero(curr_usr, MAX_USR_LEN + 2);
 		i = 0;
 		c = '\0';
 		while (c != '\n'){
@@ -112,14 +81,13 @@ void update_db_file(char *deleting_string){
 				perror("errore read");
 				exit(-1);
 			}
-			string[i] = c;
-			if (c == '\0')
+			curr_usr[i] = c;
+			if (c == '\0')//alla fine del file
 				break;
 			i++;
 		}
-		sprintf(del_string, "%s\n", deleting_string);
-		if (strcmp(string, del_string) != 0)
-			write(fileid2, string, i);
+		if (strcmp(curr_usr, del_string) != 0)
+			write(fileid2, curr_usr, strlen(curr_usr));
 		if (c == '\0'){
 			break;
 		}
