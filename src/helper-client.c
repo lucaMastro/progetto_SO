@@ -518,7 +518,6 @@ select_operation:
 
 void usr_registration_login(int sock_ds, char **usr){
 //      printf("not implemented yet :)\n");
-
         int ret, operation, len, retry, scan_ret;
         char *pw;
 

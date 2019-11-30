@@ -25,8 +25,8 @@ void stampa_messaggio(message *mess){
 	printf("\t\tcodice = %d\n", mess -> position);
 	printf("is new = %c\n", c);
 	printf("from:\n\t%s\n", mess -> usr_sender);	
-	printf("to:\n\t%s\n", 	mess -> usr_destination);
-	printf("object:\n\t%s\nn", mess -> object);
+	printf("to:\n\t%s\n", mess -> usr_destination);
+	printf("object:\n\t%s\n", mess -> object);
 	printf("text:\n\t%s\n\n", mess -> text);
 
 /*	if (mess -> is_sender_deleted)

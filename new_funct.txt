@@ -1,3 +1,5 @@
+1. i primi 2 caratteri della pass criptata sono il salt
+
 
 aaaaaaaaaaaaaaaaaaaa
 

@@ -1,6 +1,7 @@
 SERVER		= server
 CLIENT		= client
 CLIENT-CRYPT	= client-crypt
+SERVER-CRYPT	= server-crypt
 
 SSRC	= src/server-side.c
 CSRC	= src/client-side.c
@@ -9,18 +10,22 @@ H 	= src/helper
 HS 	= src/helper-server
 HC	= src/helper-client
 HCC	= src/helper-client-crypt
+HSC 	= src/helper-server-crypt
 
 HSRC	= src/helper.c
 HSSRC	= src/helper-server.c
 HCSRC	= src/helper-client.c
 
-crypt: clean $(CLIENT-CRYPT) $(SERVER) 
+crypt: clean $(CLIENT-CRYPT) $(SERVER-CRYPT) 
 not-crypt: clean $(CLIENT) $(SERVER)
 
 
 
 $(SERVER): $(H).o $(HS).o $(SERVER).o 
 	gcc -o $(SERVER) $(H).o $(HS).o -pthread src/$(SERVER).o 
+
+$(SERVER-CRYPT): $(H).o $(HSC).o $(SERVER).o 
+	gcc -o $(SERVER) $(H).o $(HSC).o -pthread src/$(SERVER).o -lcrypt
 
 $(SERVER).o: 
 	gcc -o src/$(SERVER).o $(SSRC) -c
@@ -50,6 +55,8 @@ helper-client.o:
 $(HCC).o:
 	gcc -o $(HCC).o $(HCSRC) -c -DCRYPT	
 
+$(HSC).o:
+	gcc -o $(HSC).o $(HSSRC) -c -DCRYPT
 clean:
 	rm -f src/*.o
 	rm -f $(CLIENT)

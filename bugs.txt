@@ -1,4 +1,4 @@
-
+1. se elimino un file non aggiora list.txt
 
 
 
