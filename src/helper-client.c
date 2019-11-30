@@ -19,6 +19,17 @@
 
 int handler_sock;
 
+void not_accepted_code(int scan_ret, int *codice_da_modificare, int valore_inaccettabile){
+	/* per questioni di modularità e riusabilità del codice, creo questa funzione che, ogni volta che c'è una scanf per scegliere tra operazioni disponibili, 
+	 * ferifica se il valore di ritorno della scanf (passato come primo parametro) è uguale a 0. in quel caso aggiorno il valore della variabile intera puntata
+	 * da codice_da_modificare, settandolo a "valore_inaccettabile". il secondo parametro deve essere lo stesso puntatore passato nello scanf: infati dopo ogni 
+	 * scanf su interi, si farà un check sul valore inserito. qualora venisse inserito un carattere invece che un intero, il controllo "fallirà": verrà stampato
+	 * "codice non accettabile" o simili. */
+
+	if (!scan_ret)
+		*codice_da_modificare = valore_inaccettabile;
+
+}
 
 void get_file_db(int sock_ds){
 
@@ -60,7 +71,7 @@ void handler(int signo){
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print, if flag == 2, just print the mex in code position
-        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos, code; 
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos, code, scan_ret; 
         char *sender, *object, *text;
         message *mex;
 
@@ -105,9 +116,11 @@ get_code:
 		        printf("|   *Inserisci il codice del messaggio da leggere				     |\n");
 	        	printf("|   *Inserisci un numero negativo per annullare e tornare al menù principale	     |\n");
 		        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-			if (scanf("%d", &code) == -1 && errno != EINTR)
+			if ((scan_ret = scanf("%d", &code)) == -1 && errno != EINTR)
 				error(105);
 			fflush(stdin);
+			not_accepted_code(scan_ret, &code, MAX_NUM_MEX + 2);
+
 			if (code < 0){
 				printf("operazione annullata con successo.\n");
 				code = -1;
@@ -162,9 +175,10 @@ get_code:
 usr_will:
                 	/*CHECKING USR'S WILL*/
 
-	                if (scanf("%d", &op) == -1 && errno != EINTR)
+	                if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR)
         	                error(140);
                 	fflush(stdin);
+			not_accepted_code(scan_ret, &op, 4);
 
 			if (op < minimal_code || op > 3){
 				printf("codice non valido. riprovare\n");
@@ -228,7 +242,7 @@ exit_lab:
 }
 
 int operazioni_disponibili_invio(int mode){
-	int retry;	
+	int retry, scan_ret;	
 retry:
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
 	        printf("|                                                                                    |\n");
@@ -240,8 +254,10 @@ retry:
 
 	        printf("|   %d. Anullare e tornare al menù principale					     |\n", mode + 1);
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-		if (scanf("%d", &retry) == -1 && errno != EINTR)
+		if ((scan_ret = scanf("%d", &retry)) == -1 && errno != EINTR)
 			error(220);
+		
+		not_accepted_code(scan_ret, &retry, mode + 2);
 		if (retry < 0 || retry > mode + 1){
 			printf("operazione non valida. premi un tasto per riprovare\n");
 			fflush(stdin);
@@ -390,7 +406,7 @@ get_mess:
 
 int usr_menu(int sock_ds, char *my_usrname){
 
-        int operation, new_mex_avaiable, check_upd = 1, code = -1, ret;
+        int operation, new_mex_avaiable, check_upd = 1, code = -1, ret, scan_ret;
 
 	signal(SIGINT, handler);
 select_operation:
@@ -431,13 +447,14 @@ select_operation:
 
         printf("quale operazione vuoi svolgere?\n");
 
-        if (scanf("%d", &operation) == -1 && errno != EINTR)
+        if ((scan_ret = scanf("%d", &operation)) == -1 && errno != EINTR)
                 error(995);
+	not_accepted_code(scan_ret, &operation, 10);
 
         fflush(stdin);
 
         if (operation > 9 || operation < 0){
-                printf("operazione %d non valida\n", operation);
+                printf("operazione non valida\n", operation);
                 printf("premi un tasto per riprovare:");
                 fflush(stdin);
                 printf("\e[1;1H\e[2J");
@@ -502,12 +519,13 @@ select_operation:
 void usr_registration_login(int sock_ds, char **usr){
 //      printf("not implemented yet :)\n");
 
-        int ret, operation, len, retry;
+        int ret, operation, len, retry, scan_ret;
         char *pw;
 
 	handler_sock = sock_ds;
 	signal(SIGINT, handler);
 portal:
+	operation = 3;
         printf("\e[1;1H\e[2J");
 
         printf("......................................................................................\n");
@@ -530,10 +548,10 @@ portal:
         printf("......................................................................................\n");
         printf("......................................................................................\n\n\n");
 
-        if (scanf("%d", &operation) == -1 && errno != EINTR)
+        if ((scan_ret = scanf("%d", &operation)) == -1 && errno != EINTR)
                 error(732);
-
         fflush(stdin);
+	not_accepted_code(scan_ret, &operation, 3);
 
         if (operation < 0 || operation > 2){
                 printf("operazione non valida. premi un tasto per riprovare: ");
@@ -586,10 +604,11 @@ get_usr:
                 printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
                 printf("quale operazione vuoi svolgere?\n");
 get_op:
-                if (scanf("%d", &retry) == -1 && errno != EINTR)
+                if ((scan_ret = scanf("%d", &retry)) == -1 && errno != EINTR)
                         error(732);
 
                 fflush(stdin);
+		not_accepted_code(scan_ret, &retry, 3);
 
                 switch (retry){
                         case 1:
@@ -628,10 +647,11 @@ get_pw:
                 printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
                 printf("quale operazione vuoi svolgere?\n");
 get_op1:
-                if (scanf("%d", &retry) == -1 && errno != EINTR)
+                if ((scan_ret = scanf("%d", &retry)) == -1 && errno != EINTR)
                         error(732);
-
                 fflush(stdin);
+		not_accepted_code(scan_ret, &retry, 3);
+
                 switch (retry){
 
                         case 1:
@@ -709,7 +729,7 @@ void close_client(int sock_ds){
 }
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi
-        int is_mine, ret = 0, again, fine, code;
+        int is_mine, ret = 0, again, fine, code, scan_ret;
 	
         /*SCRIVO MODE*/
         write_int(sock_ds, mode, 326);
@@ -738,9 +758,10 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	        printf("|   *Inserisci un numero negativo per annullare e tornare al menù principale	     |\n");
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 		
-                if (scanf("%d", &code) == -1 && errno != EINTR)
+                if ((scan_ret = scanf("%d", &code)) == -1 && errno != EINTR)
                         error(308);
                 fflush(stdin);
+		not_accepted_code(scan_ret, &code, MAX_NUM_MEX + 2); 
 
 		if (code > MAX_NUM_MEX)
 			goto not_acc; //just writing that "the code isnt accepted", no writing why.
@@ -774,6 +795,9 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
  /*               if (mode >= 0)	//NON È POSSIBILE CHE SI VERIFICHI: UNA VOLTA CANCELLATO UN MESS, SI PROCEDE NELLA RICERCA IN "GESTORE_LETTURE"
                         printf("messaggio già eliminato\n");*/ 	
                 //else{
+		//
+		//
+		//eseguito sempre e solo con mode < 0
                         printf("Errore: non hai messaggi ricevuti associati al codice inserito. Premi un tasto e riprova.\n");
 			fflush(stdin);
                         goto another_code;
@@ -790,8 +814,9 @@ usr_will:
 	        printf("|   OPERAZIONE 1 : Eliminare un altro messaggio					    |\n");
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ ____ _|\n\n");
 		printf("\nQuale operazione vuoi svolgere?\n");
-                if (scanf("%d", &again) == -1 && errno != EINTR)
+                if ((scan_ret = scanf("%d", &again)) == -1 && errno != EINTR)
                         error(348);
+		not_accepted_code(scan_ret, &again, 2);
 
                 fflush(stdin);
                 if (again < 0 || again > 1){
@@ -809,7 +834,7 @@ exit_lab:
 
 
 int operazioni_disponibili_wb(){
-	int retry;	
+	int retry, scan_ret;	
 retry:
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
 	        printf("|                                                                                    |\n");
@@ -817,8 +842,10 @@ retry:
 
 	        printf("|   1. Anullare e tornare al menù principale					     |\n");
 	        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-		if (scanf("%d", &retry) == -1 && errno != EINTR)
+		if ((scan_ret = scanf("%d", &retry)) == -1 && errno != EINTR)
 			error(220);
+		not_accepted_code(scan_ret, &retry, 2);
+
 		if (retry < 0 || retry > 1){
 			printf("operazione non valida. premi un tasto per riprovare\n");
 			fflush(stdin);
