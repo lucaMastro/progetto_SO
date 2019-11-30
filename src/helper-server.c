@@ -62,7 +62,7 @@ void update_db_file(char *deleting_string){
 	bzero(del_string, MAX_USR_LEN + 2);
 	sprintf(del_string, "%s\n", deleting_string);
 	
-	printf("deleting string: %s, its len: %d\n", deleting_string, strlen(deleting_string));
+//	printf("deleting string: %s, its len: %d\n", deleting_string, strlen(deleting_string));
 	fileid = open(".db/list.txt", O_CREAT | O_RDWR, 0666);
 	if (fileid == -1)
 		error(7);
