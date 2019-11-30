@@ -454,7 +454,7 @@ select_operation:
         fflush(stdin);
 
         if (operation > 9 || operation < 0){
-                printf("operazione non valida\n", operation);
+                printf("operazione non valida\n");
                 printf("premi un tasto per riprovare:");
                 fflush(stdin);
                 printf("\e[1;1H\e[2J");
@@ -632,10 +632,19 @@ get_op:
 
 get_pw:
         retry = 0;
-        printf("inserisci password (max %d caratteri):\n", MAX_PW_LEN);
+	printf("inserisci password (max %d caratteri):\n", MAX_PW_LEN);
+
+#ifndef CRYPT
         if (scanf("%ms", &pw) == -1 && errno != EINTR)
                 error(772);
         fflush(stdin);
+#else
+	pw = getpass("(per uscire con CTRL+C, premerlo e dare invio)\n");
+	if (strstr(pw, "\003") != NULL){ //è presente un ctrl+c
+		pid_t my_pid = getpid(); //got my pid
+		kill(my_pid, SIGINT);
+	}
+#endif
 
         len = strlen(pw);
         if (len > MAX_PW_LEN){
@@ -936,10 +945,17 @@ void cambia_pass(int sock_ds){
         char *new_pw;
 	
         printf("inserisci la nuova password:\n");
+#ifndef CRYPT
         if (scanf("%ms", &new_pw) == -1 && errno != EINTR)
                 error(1423);
 	fflush(stdin);
-
+#else
+	new_pw = getpass("(per uscire con CTRL+C, premerlo e dare invio)\n");
+	if (strstr(new_pw, "\003") != NULL){ //è presente un ctrl+c
+		pid_t my_pid = getpid(); //got my pid
+		kill(my_pid, SIGINT);
+	}
+#endif
         write_string(sock_ds, new_pw, 1530);
         read_int(sock_ds, &ret, 1519);
 
