@@ -212,7 +212,7 @@ void *thread_func(void *sock_ds){
 			
 	char *client_usrname;
 	struct sembuf sops;
-	int acc_sock;
+	int acc_sock, is_usr_freed;
 
 
 	acc_sock = *((int *)sock_ds);	
@@ -225,11 +225,13 @@ void *thread_func(void *sock_ds){
 
 	while(1){	
 		//bzero(client_usrname, MAX_USR_LEN + 1);
+		is_usr_freed = 0;
                 printf("....................................................................................\n");
                 printf("...............................USR_REGISTRATION_LOGIN...............................\n");
 		if (!managing_usr_registration_login(acc_sock, &client_usrname))
 			break;	
 
+		is_usr_freed = 1;
 		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, server, sem_write))
 			break;
 //                printf("....................................................................................\n");

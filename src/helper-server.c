@@ -625,6 +625,7 @@ check_operation:
                         if (write(fileid2, *usr, strlen(*usr))  == -1 || write(fileid2, "\n", 1) == -1)
                                 error(441);
                         close(fileid2);
+        		close(fileid);
 
                         printf("registrazione avvenuta.\n");
 
@@ -702,20 +703,28 @@ check_operation:
                         if (write(fileid, "1", 1) == -1)
                                 error(934);
 
-                        ret = 0;
+        		close(fileid);
+                        
+			ret = 0;
                         can_i_exit = 1;
                 }
         }
 send_to_client:
-        close(fileid);
+//        close(fileid);
         free(file_name);
+	//if (operation == 1)
+	//	free(usr);
+
         /*      SENDING SERVER ANSWER TO CLIENT */
         write_int(acc_sock, ret, 997);
 
         if (!can_i_exit)//registration option completed
                 goto check_operation;
-        else
+        else{
                 return 1;
+	/*	close_server(acc_sock, *usr, 1);
+		return 0;*/
+	}
 
 }
 
