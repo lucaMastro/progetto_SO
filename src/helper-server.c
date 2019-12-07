@@ -712,8 +712,12 @@ check_operation:
 send_to_client:
 //        close(fileid);
         free(file_name);
-	//if (operation == 1)
-	//	free(usr);
+	free(pw); //read_string doesnt free the string
+	if (operation == 1){
+		/* if it was a registration, i have to free the usrname, 'cause
+		 * i will read another string, using malloc again for the new usr */
+		free(*usr); 
+	}
 
         /*      SENDING SERVER ANSWER TO CLIENT */
         write_int(acc_sock, ret, 997);
