@@ -142,10 +142,10 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 	sops.sem_flg = 0;
 	sops.sem_num = 0;
 	sops.sem_op = -1;
-	
+
 	if (!flag){
 		send_file_db(acc_sock);
-read_dest:
+	read_dest:
 		//CHECKING ERROR ABOUT USR_LEN:
 		if(read_int(acc_sock, &retry, 146))
 			return -1;
@@ -166,30 +166,32 @@ read_dest:
 
 	/*	CHECKING IF DESTINATION EXISTS AND SENDING RESPONSE	*/
 	exist = check_destination(&usr_destination, NULL);	
-
+	free(usr_destination);
+	
 	/*	SENDING IF EXISTS	 */
 	write_int(acc_sock, exist, 269);
 
 	if (!flag){
-		//CHECKING USR_WILL. se exist == 0, retry non può essere -1
-		if (read_int(acc_sock, &retry, 146))
-			return -1;
+		//CHECKING USR_WILL. se exist == 0, retry non può essere -1 (retry == -1 quando va tutto bene)
 
-		if (!flag){
-			switch(retry){
-				case 0:
-					goto read_dest;
-				case 1:
-					return 1;
-				default:
-					break;
-			}
+		if (read_int(acc_sock, &retry, 146)){
+			return -1;
 		}
 
-	read_obj:
+		switch(retry){
+			case 0:
+				goto read_dest;
+			case 1:
+				return 1;
+			default:
+				break;
+		}
+
+		read_obj:
 		//CHECKING ERROR ABOUT OBJ_LEN:
 		if (read_int(acc_sock, &retry, 146))
 			return -1;
+			
 		if (!flag){
 			switch(retry){
 				case 0:
@@ -211,8 +213,9 @@ read_dest:
 
 read_mess:
 	//CHECKING ERROR ABOUT MESS_LEN:
-	if (read_int(acc_sock, &retry, 146))
+	if (read_int(acc_sock, &retry, 146)){
 		return -1;
+	}
 
 	if (!flag){
 		switch(retry){
@@ -242,6 +245,7 @@ read_mess:
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
+	
 	
 	if (*position == MAX_NUM_MEX){
 		can_i_get = -1;

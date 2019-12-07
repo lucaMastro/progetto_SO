@@ -165,6 +165,7 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 	//	printf("usr_destination: %s\n\n", mex -> usr_destination);
 		i++;
 	}
+	free(one_string);
 	return 1;
 }
 
