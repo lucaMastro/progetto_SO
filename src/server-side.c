@@ -40,6 +40,20 @@ __thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //b
 
 
 void handler_sigint(){
+	int i;
+	printf("last %d\n", last);
+//	while(getchar() != "\n");
+	for (i = 0; i < MAX_NUM_MEX; i++){
+		if (i < last){
+			printf("gone into codi\n");
+			free(message_list[i] -> usr_destination);
+			free(message_list[i] -> usr_sender);
+			free(message_list[i] -> object);
+			free(message_list[i] -> text);
+		}
+		free(message_list[i]);
+	}
+	printf("ok\n");
 	free(message_list);
 	exit(EXIT_SUCCESS);
 }
@@ -64,6 +78,8 @@ int main(int argc, char *argv[]){
 	ParseCmdLine(argc, argv, &port);
 	port_num = strtol(port, &port, 0); 
 	
+
+	signal(SIGINT, handler_sigint);
 
 	//INITIALIZING PARAMS
 	
@@ -142,14 +158,15 @@ int main(int argc, char *argv[]){
 		if (acc_sock == NULL)
 			error(169);
 
-		printf("main in attesa di accept:\n\n");
+		printf("main in attesa di accept....\n\n");
 		*acc_sock = accept(sock_ds, (struct sockaddr*) &client_addr, &client_len); 
 		if (acc_sock < 0){
 			perror("error accepting\n");
 			exit(EXIT_FAILURE);
 		} 
 	
-		printf("connessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
+//                printf("\n");
+		printf("\nconnessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
 	//	printf("\nconnessione avvenuta\n");
 	
 		if (pthread_create(&tid, NULL, thread_func, (void*) acc_sock)){
@@ -160,9 +177,7 @@ int main(int argc, char *argv[]){
 			perror("error detatching");
 			exit(EXIT_FAILURE);
 		}
-
 	}
-	printf("exit from while\n");
 	
 }
 
@@ -210,15 +225,16 @@ void *thread_func(void *sock_ds){
 
 	while(1){	
 		//bzero(client_usrname, MAX_USR_LEN + 1);
+                printf("....................................................................................\n");
+                printf("...............................USR_REGISTRATION_LOGIN...............................\n");
 		if (!managing_usr_registration_login(acc_sock, &client_usrname))
 			break;	
-		
-		printf("\n\nlogin effettuato da: %s\n\n", client_usrname);
 
 		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, server, sem_write))
 			break;
+//                printf("....................................................................................\n");
 	}
-	printf("fine\n");
+//	printf("fine\n");
 //	pthread_exit((void*) 0);
 	free(sock_ds);
 }

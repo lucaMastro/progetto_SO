@@ -381,6 +381,7 @@ int managing_usr_menu(int acc_sock, message **message_list, int *position, int *
         while (operation != 7){
 
                 printf(".....................................................................................\n");
+                printf("......................................MAIN_MENU......................................\n");
                 printf("\ngestore di: %s\n\n", client_usrname);
                 printf("stampo my_mex:\n");
                 stampa_bitmask(my_mex, *last);
@@ -1038,7 +1039,7 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 		return -1;
 
         pw_len = strlen(new_pw);
-	printf("pw_len = %d\n", pw_len);
+//	printf("pw_len = %d\n", pw_len);
 
         exist = check_destination(&my_usr, &dest_file);
         if (exist){
