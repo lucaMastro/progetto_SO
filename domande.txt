@@ -1,0 +1,3 @@
+ha senso che quando premo ctrl+c server-side venga cancellato il db? e anche: ha senso che ogni volta che lancio il server venga re-inizializzato?
+
+è necessaria una presentazione?

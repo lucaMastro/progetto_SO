@@ -40,12 +40,10 @@ __thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //b
 
 
 void handler_sigint(){
-	int i;
-	printf("last %d\n", last);
-//	while(getchar() != "\n");
+	int i, fileid;
+	printf("\n");
 	for (i = 0; i < MAX_NUM_MEX; i++){
 		if (i < last){
-			printf("gone into codi\n");
 			free(message_list[i] -> usr_destination);
 			free(message_list[i] -> usr_sender);
 			free(message_list[i] -> object);
@@ -53,7 +51,7 @@ void handler_sigint(){
 		}
 		free(message_list[i]);
 	}
-	printf("ok\n");
+	system("rm -rf .db");	
 	free(message_list);
 	exit(EXIT_SUCCESS);
 }

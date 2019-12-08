@@ -192,17 +192,15 @@ int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last
 		if (read_int(acc_sock, &retry, 146))
 			return -1;
 			
-		if (!flag){
-			switch(retry){
-				case 0:
-					goto read_dest;
-				case 1:
-					goto read_obj;
-				case 2:
-					return 1;
-				default:
-					break;
-			}
+		switch(retry){
+			case 0:
+				goto read_dest;
+			case 1:
+				goto read_obj;
+			case 2:
+				return 1;
+			default:
+				break;
 		}
 	}
 
@@ -478,6 +476,33 @@ is_read_op:
 }
 
 
+void random_salt(char salt[3]){
+
+	/* intervallo di valori per il salt: [a-zA-Z0-9./]
+         * a-z: 26
+         * A-z: 26
+         * 0-9: 10
+         * ./ :  2 
+         * totale: 64 */
+        char values[64 + 1];
+	int i, random_value;
+
+	bzero(salt, 3);
+        for (i = 0; i < 26; i++){
+                values[i] = (char) (i + 97);
+                values[i + 26] = (char) (i + 65); //maiuscole 
+        }
+        for (i = 52; i < 62; i++)
+                values[i] = (char) (i - 4);
+        values[62] = '.';
+        values[63] = '/';
+
+	for (i = 0; i < 2; i++){
+		random_value = rand() % 64;
+		salt[i] = values[random_value];
+	}
+}
+
 
 int managing_usr_registration_login(int acc_sock, char **usr){
         int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
@@ -490,7 +515,7 @@ int managing_usr_registration_login(int acc_sock, char **usr){
 	char salt[2 + 1], *crypted;
 	struct crypt_data data;
 	data.initialized = 0;
-	int random_value;
+//	int random_value;
 
 	/* intervallo di valori per il salt: [a-zA-Z0-9./]
          * a-z: 26
@@ -498,7 +523,7 @@ int managing_usr_registration_login(int acc_sock, char **usr){
          * 0-9: 10
          * ./ :  2 
          * totale: 64 */
-        char values[64 + 1];
+/*        char values[64 + 1];
         for (i = 0; i < 26; i++){
                 values[i] = (char) (i + 97);
                 values[i + 26] = (char) (i + 65); //maiuscole 
@@ -506,7 +531,7 @@ int managing_usr_registration_login(int acc_sock, char **usr){
         for (i = 52; i < 62; i++)
                 values[i] = (char) (i - 4);
         values[62] = '.';
-        values[63] = '/';
+        values[63] = '/';*/
 	
 	
 #endif
@@ -517,12 +542,13 @@ check_operation:
         bzero(stored_pw, MAX_PW_LEN + 1);
 #else
         bzero(stored_pw, 14);
-	bzero(salt, 3);
+/*	bzero(salt, 3);
 
 	for (i = 0; i < 2; i++){
 		random_value = rand() % 64;
 		salt[i] = values[random_value];
-	}
+	}*/
+	random_salt(salt);
 #endif
 
         ret = 0;
@@ -989,7 +1015,7 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 
 
 
-int check_destination(char **usr_destination, char **dest){
+int check_destination(char **usr_destination, char **dest){  //se dest è != NULL, si copierà il valore ".db/<usr_dest>.txt\0". deve essere però già allocato
         int len = strlen(*usr_destination) + 8, fileid, copy = 0;
         char *destination_file;
 	
@@ -1021,13 +1047,6 @@ int check_destination(char **usr_destination, char **dest){
 }
 
 
-/*void server_test(int acc_sock, message **mex_list, int *position, int semid){
-
-        read_mex(acc_sock, mex_list, position, semid);
-
-        stampa_messaggio(mex_list[*position]);
-}*/
-
 
 
 int mng_cambio_pass(int acc_sock, char *my_usr){
@@ -1043,7 +1062,6 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 
 	len = strlen(my_usr) + 8;
         dest_file = (char *) malloc(sizeof(char) * (len + 1));
-
         if (dest_file == NULL)
                 error(1442);
 
@@ -1052,8 +1070,10 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 		error(694);
 	bzero(new_pw, MAX_PW_LEN);*/
 
-        if (read_string(acc_sock, &new_pw, 1548))
+        if (read_string(acc_sock, &new_pw, 1548)){
+		free(dest_file);
 		return -1;
+	}
 
         pw_len = strlen(new_pw);
 //	printf("pw_len = %d\n", pw_len);
@@ -1063,12 +1083,14 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
                 /*      APRO IL FILE, LO SVUOTO*/
                 fileid = open(dest_file, O_RDWR|O_TRUNC|O_APPEND, 0666);
                 if (fileid == -1){
+			free(dest_file);
                         perror("error at line 1544");
                         goto exit_lab;
-                }
+                }	
+		free(dest_file);
 	#ifdef CRYPT
 		/*crypto la pass*/
-		strcpy(salt, "AF"); //usare stesso meccanismo della registrazione per generarlo casuale
+		random_salt(salt);
 		crypted = crypt_r(new_pw, salt, &data);
 
                 /*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */

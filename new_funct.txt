@@ -1,3 +1,6 @@
+1. inserire la stampa del messaggio da eliminare quando viene selezionata l'operazione 5, con richiesta di conferma
+
+2. inserire possibilità di eliminare un messaggio letto fornendone il codice
 
 
 aaaaaaaaaaaaaaaaaaaa
