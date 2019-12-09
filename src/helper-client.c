@@ -21,7 +21,7 @@ int handler_sock;
 
 void not_accepted_code(int scan_ret, int *codice_da_modificare, int valore_inaccettabile){
 	/* per questioni di modularità e riusabilità del codice, creo questa funzione che, ogni volta che c'è una scanf per scegliere tra operazioni disponibili, 
-	 * ferifica se il valore di ritorno della scanf (passato come primo parametro) è uguale a 0. in quel caso aggiorno il valore della variabile intera puntata
+	 * verifica se il valore di ritorno della scanf (passato come primo parametro) è uguale a 0. in quel caso aggiorno il valore della variabile intera puntata
 	 * da codice_da_modificare, settandolo a "valore_inaccettabile". il secondo parametro deve essere lo stesso puntatore passato nello scanf: infati dopo ogni 
 	 * scanf su interi, si farà un check sul valore inserito. qualora venisse inserito un carattere invece che un intero, il controllo "fallirà": verrà stampato
 	 * "codice non accettabile" o simili. */
@@ -36,9 +36,9 @@ void get_file_db(int sock_ds){
 	char *buffer, *token;
 	int found, is_first = 1;
 
-	buffer = (char*) malloc(sizeof(char) * (MAX_USR_LEN +1));
+/*	buffer = (char*) malloc(sizeof(char) * (MAX_USR_LEN +1));
 	if (buffer == NULL)
-		error(195);
+		error(195);*/
 
 	printf("[");
 	while (1){
@@ -50,15 +50,15 @@ void get_file_db(int sock_ds){
 		if (!is_first)
 			printf(", ");
 
-		bzero(buffer, MAX_USR_LEN + 1);
 		read_string(sock_ds, &buffer, 197);
 
 		printf("%s", buffer);
 		is_first = 0;
+		
+		free(buffer); //in the while, cause each read_string does a malloc but doesnt free
 	}
 	printf("]");
 
-	free(buffer);
 	return;
 }
 
@@ -96,7 +96,7 @@ start:
 		minimal_code = 0;
 		can_i_wb = 1;
 
-		get_mex(sock_ds, mex, 1); 
+		get_mex(sock_ds, mex, 1); //non eseguito se la funzione è chiamata singolarmente (si vuole leggere un solo mes fornendone il codice) 
 
 get_code:
 		/*PRINTING MESSAGE*/
@@ -172,11 +172,17 @@ get_code:
 		        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 			printf("\nQuale operazione vuoi svolgere?\n");
 
+        	         free(mex -> usr_sender);
+        	         free(mex -> usr_destination);
+        	         free(mex -> object);
+        	         free(mex -> text);
 usr_will:
                 	/*CHECKING USR'S WILL*/
 
-	                if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR)
-        	                error(140);
+	                if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR){
+        	         	free(mex);
+			 	error(140);
+			}
                 	fflush(stdin);
 			not_accepted_code(scan_ret, &op, 4);
 
@@ -236,6 +242,7 @@ usr_will:
         	}
 	}
 exit_lab:
+      	
 	free(mex);
         return 0;
 
@@ -401,6 +408,9 @@ get_mess:
 		send_mex(sock_ds, mex, 0);
 	        printf("\n\ninvio del messaggio avvenuto con successo.\n");
 	}
+	free(mex -> usr_destination);
+	free(mex -> object);
+	free(mex -> text);
 	free(mex);
 }
 
@@ -489,7 +499,6 @@ select_operation:
                         break;
                 case 5:
                         cancella_messaggio(sock_ds, code);
-//                      check_upd = 1;
                         break;
                 case 6:
                         read_int(sock_ds, &new_mex_avaiable, 1147);
@@ -681,7 +690,7 @@ get_op1:
 
         //reading response:
         read_int(sock_ds, &ret, 879);
-
+	free(pw);
         switch (ret){
                 case 0: //it was allright
                         if (operation == 1){ //it was a registration:
@@ -696,19 +705,19 @@ get_op1:
                 case 1:
                         //file già esistente:
                         printf("username già presente. per favore riprova.\npremi INVIO per continuare.\n");
-                        while(getchar() != '\n') {};
+			fflush(stdin);
                         goto portal;
                         break;
                 case 2:
                         //uncorrect pw or username in login
                         printf("username o password errati. per favore riprova (premi INVIO per continuare).");
-                        while(getchar() != '\n') {};
+			fflush(stdin);
                         goto portal;
                         break;
                 case 3:
                         //usr already logged
                         printf("username già loggato. per favore riprova (premi INVIO per continuare).\n");
-                        while(getchar() != '\n') {};
+			fflush(stdin);
                         goto portal;
                         break;
                 case 4:
@@ -771,12 +780,16 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                 fflush(stdin);
 		not_accepted_code(scan_ret, &code, MAX_NUM_MEX + 2); 
 
-		if (code > MAX_NUM_MEX)
-			goto not_acc; //just writing that "the code isnt accepted", no writing why.
+		if (code > MAX_NUM_MEX){
+			//goto not_acc; //just writing that "the code isnt accepted", no writing why.	
+                        printf("Errore: non hai messaggi ricevuti associati al codice inserito. Premi un tasto e riprova.\n");
+			fflush(stdin);
+                        goto another_code;
+		}
 
                 if (code < 0){
 			code = -1; //SET THE CODE = -1: I FIX THE BUG IF USERS INSERT -999999
-                	write_int(sock_ds, (int) code, 328);
+                	write_int(sock_ds, code, 328);
                         printf("operazione annullata con successo\n");
                         goto exit_lab;
                 }
@@ -798,19 +811,14 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                         exit(EXIT_FAILURE);
                 }
         }
-        else{
-		not_acc:
- /*               if (mode >= 0)	//NON È POSSIBILE CHE SI VERIFICHI: UNA VOLTA CANCELLATO UN MESS, SI PROCEDE NELLA RICERCA IN "GESTORE_LETTURE"
-                        printf("messaggio già eliminato\n");*/ 	
-                //else{
-		//
-		//
+/*        else{
+	//	not_acc:
 		//eseguito sempre e solo con mode < 0
                         printf("Errore: non hai messaggi ricevuti associati al codice inserito. Premi un tasto e riprova.\n");
 			fflush(stdin);
                         goto another_code;
                 //}
-        }
+        }*/
 
         /*CHECKING USR'S WILL. eseguire solo se mode < 0*/
         if (mode < 0){ //IN QUESTO MODO BLOCCO ELIMINAZIONI MULTIPLE DURANTE LA "GESTORE_LETTURE"
@@ -921,6 +929,8 @@ get_mex:
 	        printf("\n\ninvio del messaggio avvenuto con successo.\n");
 	}
 
+	free(mex -> text);
+	free(mex -> object);
 	free(mex);
         return 1;
 }

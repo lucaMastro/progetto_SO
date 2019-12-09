@@ -107,6 +107,7 @@ reg_log:
 		bzero(my_usrname, MAX_USR_LEN);
 		goto reg_log;
 	}
+	//free(my_usrname);
 }
 
 

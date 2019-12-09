@@ -43,7 +43,7 @@ void handler_sigint(){
 	int i, fileid;
 	printf("\n");
 	for (i = 0; i < MAX_NUM_MEX; i++){
-		if (i < last){
+		if (i < last && server[i] == 1){
 			free(message_list[i] -> usr_destination);
 			free(message_list[i] -> usr_sender);
 			free(message_list[i] -> object);

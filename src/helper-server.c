@@ -839,6 +839,7 @@ void stampa_bitmask(int *bitmask, int last){
 }
 
 int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position, int *last){
+	/*mode >= 0 means this func is called after reading a mex */
         int code, is_mine, compl, again, mode, ret = 0;
         struct sembuf sops;
         message *mex;
