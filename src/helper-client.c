@@ -844,9 +844,14 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 		        printf("|   OPERAZIONE 1 : Conferma l'eliminazione del messaggio			     |\n");
 			printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 			printf("\nQuale operazione vuoi svolgere?\n");
+
+        	        free(mex -> usr_sender);
+	        	free(mex -> usr_destination);
+        		free(mex -> object);
+        		free(mex -> text);	
+			free(mex);
 	               
 			if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR){
-				free(mex);
 				error(140);
 			}
 			fflush(stdin);

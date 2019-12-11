@@ -877,7 +877,9 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 		if (mode < 0){
 	                mex = mex_list[code];
 			send_mex(acc_sock, mex, 1);
-		
+			//il messaggio è stato letto in fase di eliminazione:
+			mex -> is_new = 0;
+
 			/*LEGGO CONFERMA ELIMINAZIONE*/
 	                if (read_int(acc_sock, &conf, 881))
 				return -1;
