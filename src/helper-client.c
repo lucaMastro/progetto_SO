@@ -755,8 +755,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
         if (mode >= 0)
                 code = mode;
 
-        else{ //mode < 0
-               // printf("dammi il codice del messaggio da eliminare.\nNOTA: se non hai messaggi associati al codice inserito, l'operazione verrà interrotta.\n(inserire un numero negativo per annullare)\n");
+        else{ //mode < 0, separatamente a gestore letture
 
 		another_code:
         	printf("\e[1;1H\e[2J");
@@ -788,14 +787,16 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                         goto another_code;
 		}
 
-                if (code < 0){
+		else if (code < 0){
 			code = -1; //SET THE CODE = -1: I FIX THE BUG IF USERS INSERT -999999
                 	write_int(sock_ds, code, 328);
                         printf("operazione annullata con successo\n");
                         goto exit_lab;
                 }
-                /*SCRIVO CODE*/
-                write_int(sock_ds, code, 328);
+		
+		else
+                	/*SCRIVO CODE*/
+	                write_int(sock_ds, code, 328);
         }
 	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
@@ -812,12 +813,9 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                         exit(EXIT_FAILURE);
                 }
         }
-        else{
-	//	not_acc:
-		//eseguito sempre e solo con mode < 0
-                        printf("Errore: non hai messaggi ricevuti associati al codice inserito.\n");
-                //}
-        }
+        else //eseguito sempre e solo con mode < 0
+	 	printf("Errore: non hai messaggi ricevuti associati al codice inserito.\n");
+                        
 
         /*CHECKING USR'S WILL. eseguire solo se mode < 0*/
         if (mode < 0){ //IN QUESTO MODO BLOCCO ELIMINAZIONI MULTIPLE DURANTE LA "GESTORE_LETTURE"

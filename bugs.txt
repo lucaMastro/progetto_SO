@@ -225,5 +225,5 @@ NOTA: stesso scenario con "b" al posto di a*20 funziona bene
 		}
 
 - in gestore_eliminazioni <-> cancella_messaggio, c'era desincronizzazione nel caso venisse inserito un codice associato a un messaggio non mio
-	----> fixed. manca refactory
+	----> fixed: nel blocco else client-side rimosso il "goto another_code".
 	

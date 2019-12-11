@@ -884,7 +884,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 if (semop(sem_write, &sops, 1) == -1)
                         error(398);
 
-		sleep(10); //wait 10 seconds to test concorrence
+//		sleep(10); //wait 10 seconds to test concorrence
 //		
 //		printf("ho preso il controllo\n");
                 /*START EMPTYNG MESSAGE*/
@@ -915,8 +915,9 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                         error(422);
 
                 /*SENDING ELIMINATION COMPLETED*/
-                compl = 1;
-                write_int(acc_sock, compl, 415);
+/*               compl = 1;
+                write_int(acc_sock, compl, 415);*/
+                write_int(acc_sock, 1, 415);
         }
 //        else{//not is mine.
     /*            if (mode >= 0) //trying deleting again the same mex after read it: non più possibile
