@@ -240,11 +240,11 @@ read_mess:
 		}
 	}
 	
-	printf("try to get control\n");
+//	printf("try to get control\n");
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
-	printf("controllo preso\n");
+//	printf("controllo preso\n");
 	
 	//sleep(10); //wait 10 seconds to test concorrence
 	
@@ -272,7 +272,7 @@ read_mess:
         	        error(158);
 		return -1;
 	}
-//	stampa_messaggio(mex);
+	stampa_messaggio(mex);
 
 	server[*position] = 1;
 
@@ -338,7 +338,7 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         mex -> is_new = 0;
                         found = 0;
 			
-			if (flag != 2){
+		//	if (flag != 2){
 				/*READING USR_WILL*/
 read_usr_will:
         	                if (read_int(acc_sock, &op, 613))
@@ -360,9 +360,11 @@ read_usr_will:
 						leave = 1;
 						break;
 				}
-			}
-			else
-				leave = 1;
+		//	}
+		//	else
+		//		leave = 1;
+			if (flag == 2)
+				leave = 1;				
 		}
         }
         if (i == temp_last && leave == 0)

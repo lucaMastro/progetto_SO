@@ -1,6 +1,5 @@
 1. inserire la stampa del messaggio da eliminare quando viene selezionata l'operazione 5, con richiesta di conferma
 
-2. inserire possibilità di eliminare un messaggio letto fornendone il codice
 
 3. quando il server viene messo in piedi, sloggare tutti gli utenti. questo perchè:
 	+se il server crasha, il client cattura il SIGPIPE
@@ -39,3 +38,6 @@ realizzazione:
 
 
 - leggere un solo messaggio inserendo il relativo codice
+
+- inserire possibilità di eliminare un messaggio letto fornendone il codice
+	--> aggiunta anche la possibilità di rispondervi. usato stesso codice del gestore letture

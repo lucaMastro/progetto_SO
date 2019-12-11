@@ -79,8 +79,10 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
                 error(24);
 //	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
 	
-	if (flag == 2)
+	if (flag == 2){
+		minimal_code = 0;
 		goto get_code;
+	}
 	
 start:
         
@@ -152,7 +154,7 @@ get_code:
 		//printf("%p, len = %d\n", mex, strlen( mex -> object));
                 stampa_messaggio(mex);
 	        printf("......................................................................................\n");	
-		if (flag != 2){
+//		if (flag != 2){
 	        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
 		        printf("|                                                                                    |\n");
 
@@ -167,8 +169,13 @@ get_code:
 			}
 
 	        	printf("|   OPERAZIONE 1 : Cancellare il messaggio visualizzato				     |\n");
-		        printf("|   OPERAZIONE 2 : Cercare un altro messaggio					     |\n");
+		if (flag != 2){
+			printf("|   OPERAZIONE 2 : Cercare un altro messaggio					     |\n");
         		printf("|   OPERAZIONE 3 : Interrompere la ricerca e tornare al menu principale		     |\n");
+		}
+		else{
+        		printf("|   OPERAZIONE 2 : Tornare al menu principale					     |\n");
+		}
 		        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 			printf("\nQuale operazione vuoi svolgere?\n");
 
@@ -181,11 +188,20 @@ usr_will:
 			}
                 	fflush(stdin);
 			not_accepted_code(scan_ret, &op, 4);
-
+		if (flag != 2){
 			if (op < minimal_code || op > 3){
 				printf("codice non valido. riprovare\n");
 				goto usr_will;
 			}
+		}
+		else{	
+			if (op < minimal_code || op > 2){
+				printf("codice non valido. riprovare\n");
+				goto usr_will;
+			}
+			if (op == 2)
+				op = 3;
+		}
 			/*SENDING USR'S WILL*/
 			write_int(sock_ds, op, 116);
 
@@ -213,6 +229,8 @@ usr_will:
 				default:
 					break;
                 	}
+			if (flag == 2)
+				leave = 1;
 			if (!leave){ //updating found
 				read_int(sock_ds, &found, 156);
 			}
@@ -221,9 +239,9 @@ usr_will:
         	        free(mex -> object);
         	        free(mex -> text);
 		}
-		else
-			goto exit_lab;
-	}
+//		else
+//			goto exit_lab;
+//	}
 	
         if (!leave){ //eseguito solo con flag == 0 o flag == 1.
 		if (isfirst && !flag)
@@ -872,6 +890,8 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         int len = strlen(object), ret, retry;
 	message *mex;
 
+	printf("writeback start:\nobj = %s\nmyusr %s\n, dest = %s\n", object, my_usr, usr_dest);
+	fflush(stdin);
 
 	//invio destinatario
         write_string(sock_ds, usr_dest, 1296);
@@ -909,8 +929,10 @@ get_mex:
 
 		if (retry)
 			return 1;
-		else
+		else{
+			free(mex -> text);
 			goto get_mex;
+		}
 	}
 	retry = -1;
 	write_int(sock_ds, retry, 221);
