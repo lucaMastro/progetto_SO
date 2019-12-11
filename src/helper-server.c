@@ -239,13 +239,14 @@ read_mess:
 				break;
 		}
 	}
-
+	
+	printf("try to get control\n");
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
+	printf("controllo preso\n");
 	
-
-	//sleep(10); //wait 20 seconds to test concorrence
+	//sleep(10); //wait 10 seconds to test concorrence
 	
 	if (*position == MAX_NUM_MEX){
 		can_i_get = -1;
@@ -448,11 +449,13 @@ is_read_op:
                                 	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
+                                ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
+                                write_int(acc_sock, ret, 453);
                                 break;
 
                         case 6:
                                 ret = update_system_state(my_mex, my_new_mex, message_list, client_usrname, *last, server);
-                                write_int(acc_sock, ret, sizeof(ret));
+                                write_int(acc_sock, ret, 458);
                                 printf("stato aggiornato.\n");
                                 break;
                         case 7:
@@ -873,7 +876,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
         if (is_mine == 1){
   //              printf("codice %d accettato\n", code);
 
-		printf("try to get control\n");
+//		printf("try to get control\n");
                 /*TRY GETTING CONTROL*/
                 sops.sem_flg = 0;
                 sops.sem_num = 0;
@@ -881,7 +884,9 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 if (semop(sem_write, &sops, 1) == -1)
                         error(398);
 
-		printf("ho preso il controllo\n");
+		sleep(10); //wait 10 seconds to test concorrence
+//		
+//		printf("ho preso il controllo\n");
                 /*START EMPTYNG MESSAGE*/
                 mex = mex_list[code];
                 free(mex -> usr_destination);
@@ -913,14 +918,25 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 compl = 1;
                 write_int(acc_sock, compl, 415);
         }
-        else{//not is mine.
+//        else{//not is mine.
     /*            if (mode >= 0) //trying deleting again the same mex after read it: non più possibile
                         printf("messaggio già eliminato\n");
                 else*/
-                        goto another_code;
-        }
 
-        if (mode < 0){
+//		//checking if usr wants to retry
+  //              if (read_int(acc_sock, &again, 374))
+//			return -1;
+		
+  //              if (again)
+    //                    goto another_code;
+//		else
+  //              goto another_code;
+    //    }
+
+        if (mode < 0){ 
+		/* se chiamata separatamente dalle letture, verifico se eliminare 
+		 * un altro mess o no, indipendentemente dal fatto che il primo 
+		 * codice fosse accettabile o meno */
                 if (read_int(acc_sock, &again, 444))
 			return -1;
 
@@ -958,6 +974,7 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
         /*MAKE THE STRING .db/<usr>.txt */
         sprintf(dest, ".db/%s.txt", usr);
 
+
         if (unlink(dest) == -1){
                 printf("impossibile eliminare file.\n");
                 bol = 0;
@@ -970,16 +987,18 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
         /*must set 0 on server, and freeing my messages*/
 
         /*TRY GETTING CONTROL*/
+
         sops.sem_flg = 0;
         sops.sem_num = 0;
         sops.sem_op = -1;
         if (semop(sem_write, &sops, 1) == -1)
                 error(1294);
-
+	//sleep(10); //wait 10 seconds to test concorrence	
+	
         for (i = 0; i < *last; i++){
 		mex = mex_list[i];
-                if (my_mex[i] == 1){ //i is the index of a mex i have to free
-
+                //if (my_mex[i] == 1){ //i is the index of a mex i have to free cause it was destinated to the deleting usr
+		if (!strcmp(mex -> usr_destination, usr)){
                         /*START EMPTYNG MESSAGE*/
 
         	        free(mex -> usr_destination);

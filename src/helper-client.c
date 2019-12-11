@@ -499,6 +499,7 @@ select_operation:
                         break;
                 case 5:
                         cancella_messaggio(sock_ds, code);
+                        read_int(sock_ds, &new_mex_avaiable, 502);//leggo per aggiornamenti
                         break;
                 case 6:
                         read_int(sock_ds, &new_mex_avaiable, 1147);
@@ -811,14 +812,12 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                         exit(EXIT_FAILURE);
                 }
         }
-/*        else{
+        else{
 	//	not_acc:
 		//eseguito sempre e solo con mode < 0
-                        printf("Errore: non hai messaggi ricevuti associati al codice inserito. Premi un tasto e riprova.\n");
-			fflush(stdin);
-                        goto another_code;
+                        printf("Errore: non hai messaggi ricevuti associati al codice inserito.\n");
                 //}
-        }*/
+        }
 
         /*CHECKING USR'S WILL. eseguire solo se mode < 0*/
         if (mode < 0){ //IN QUESTO MODO BLOCCO ELIMINAZIONI MULTIPLE DURANTE LA "GESTORE_LETTURE"
@@ -940,6 +939,7 @@ int delete_me(int sock_ds){//, char *usr){
         /*client-side version of elimination*/
         int ok;
 
+	printf("attendo conferma eliminazione.\n");
         read_int(sock_ds, &ok, 1347);
         if (ok == 1)
                 printf("account eliminato con successo. ");

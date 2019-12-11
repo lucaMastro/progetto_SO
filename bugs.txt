@@ -200,3 +200,30 @@ NOTA: stesso scenario con "b" al posto di a*20 funziona bene
 
 - se elimino un file non aggiora list.txt
 	----> succedeva solo con gli utenti di lunghezza 20. il buffer non era abbastanza grande per contenere sia '\n' che '\0'
+
+
+- non funziona il write back
+	----> avevo messo il free dei vari campi del messaggio ricevuto prima della scelte delle varie opzioni
+
+
+- in delete usr, nel tentativo di testare concorrenza:
+	a invia un messaggio a b
+	ricevi messaggio lato server in sleep per 10 secondi		b nel frattempo elimina il suo account
+	messaggio ricevuto correttamente				
+									b riprende l'eliminazione
+	eliminazione di b completata
+	
+	il messaggio ricevuto da b non viene eliminato
+	-----> nella condizione di eliminazione del messaggio, era: 
+		if (my_mex[i] == 1){
+			..
+		}
+		ma my_mex non veniva aggiornato, e quindi la condizione risultava nulla.
+		fixato modificato la condizione in:
+		if (!strcmp(mex -> usr_destination, usr)){
+			..
+		}
+
+- in gestore_eliminazioni <-> cancella_messaggio, c'era desincronizzazione nel caso venisse inserito un codice associato a un messaggio non mio
+	----> fixed. manca refactory
+	
