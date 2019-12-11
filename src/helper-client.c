@@ -172,10 +172,6 @@ get_code:
 		        printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 			printf("\nQuale operazione vuoi svolgere?\n");
 
-        	         free(mex -> usr_sender);
-        	         free(mex -> usr_destination);
-        	         free(mex -> object);
-        	         free(mex -> text);
 usr_will:
                 	/*CHECKING USR'S WILL*/
 
@@ -220,6 +216,10 @@ usr_will:
 			if (!leave){ //updating found
 				read_int(sock_ds, &found, 156);
 			}
+        	        free(mex -> usr_sender);
+        	        free(mex -> usr_destination);
+        	        free(mex -> object);
+        	        free(mex -> text);
 		}
 		else
 			goto exit_lab;
@@ -874,6 +874,7 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         char *text, *re_obj;
         int len = strlen(object), ret, retry;
 	message *mex;
+
 
 	//invio destinatario
         write_string(sock_ds, usr_dest, 1296);

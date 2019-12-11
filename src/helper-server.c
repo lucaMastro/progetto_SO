@@ -244,6 +244,8 @@ read_mess:
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
 	
+
+	//sleep(10); //wait 20 seconds to test concorrence
 	
 	if (*position == MAX_NUM_MEX){
 		can_i_get = -1;
@@ -871,6 +873,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
         if (is_mine == 1){
   //              printf("codice %d accettato\n", code);
 
+		printf("try to get control\n");
                 /*TRY GETTING CONTROL*/
                 sops.sem_flg = 0;
                 sops.sem_num = 0;
@@ -878,7 +881,7 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                 if (semop(sem_write, &sops, 1) == -1)
                         error(398);
 
-
+		printf("ho preso il controllo\n");
                 /*START EMPTYNG MESSAGE*/
                 mex = mex_list[code];
                 free(mex -> usr_destination);
@@ -1160,29 +1163,3 @@ void log_out(char *usr){
 
 
 
-
-/*
-void store_mex(int sock, message **mex_list, int *position, int semid){ 
-	/*store the mex in the correct position of the server's struct	
-
-	struct sembuf sops;
-
-	sops.sem_num = 0;
-	sops.sem_flg = 0;
-	sops.sem_op = -1;
-
-	//	TRY TO GET CONTROL	
-	if (semop(semid, &sops, 1) == -1)
-		error(1356);
-	
-	message *mex = mex_list[*position];
-
-	/*	STORING MEX IN THE CORRECT POSITION OF MEX_LIST	
-	get_mex(sock, mex);
-
-	//	GIVE CONTROL TO OTHERS	
-
-	sops.sem_op = 1;
-	if (semop(semid, &sops, 1) == -1)
-		error(1386);
-}*/
