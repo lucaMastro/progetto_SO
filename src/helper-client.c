@@ -71,7 +71,15 @@ void handler(int signo){
 
 
 int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print, if flag == 2, just print the mex in code position
-        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, leave = 0, pos, code, scan_ret; 
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, maximal_code = 3, leave = 0, pos, code, scan_ret; 
+	/* minimal e maximal code sono parametri che servono a stabilire l'intervallo di valori validi
+	 * inseriti dall'utente. in particolare:
+	 * minimal code: è un parametro che serve a stabilire quale delle operazioni sarà disponibile 
+	 * 		 dopo aver ricevuto il messaggio. serve a stabilire se è possibile o meno 
+	 * 		 rispondere a un messaggio letto
+	 * maximal code: è un parametro che serve a discriminare il valore massimo tra quelli possibili
+	 * 		 nel set di operazioni possibili dopo aver letto un messaggio. serve solo nel 
+	 * 		 caso di flag == 2. */
         char *sender, *object, *text;
         message *mex;
 
@@ -80,6 +88,7 @@ int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, onl
 //	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
 	
 	if (flag == 2){
+		maximal_code = 2;
 		minimal_code = 0;
 		goto get_code;
 	}
@@ -188,20 +197,18 @@ usr_will:
 			}
                 	fflush(stdin);
 			not_accepted_code(scan_ret, &op, 4);
-		if (flag != 2){
-			if (op < minimal_code || op > 3){
+
+			if (op < minimal_code || op > maximal_code){
 				printf("codice non valido. riprovare\n");
 				goto usr_will;
 			}
-		}
-		else{	
-			if (op < minimal_code || op > 2){
-				printf("codice non valido. riprovare\n");
-				goto usr_will;
-			}
-			if (op == 2)
+
+			/* se flag == 2, allora il codice di uscita (mostrato all'utente) è 2. 
+			 * settando op = 3, non devo più dividere i casi flag == 2 dagli altri, 
+			 * riutilizzando la stessa struttura di controllo lato server. */
+			if (flag == 2 && op == 2)
 				op = 3;
-		}
+
 			/*SENDING USR'S WILL*/
 			write_int(sock_ds, op, 116);
 
@@ -209,17 +216,17 @@ usr_will:
 				case 0:
 					if (can_i_wb)				
                         	        	write_back(sock_ds, mex -> object, my_usrname, mex -> usr_sender);
-/*					else{//non dovrebbe essere necessario
-					printf("operazione non disponibile. riprovare\n");
-					goto usr_will;
-					}*/
-					printf("premi un tasto per continuare la ricerca:");
-					fflush(stdin);
+					if (flag != 2){
+						printf("premi un tasto per continuare la ricerca:");
+						fflush(stdin);
+					}
 					break;
 				case 1:	
 		                        cancella_messaggio(sock_ds, mex -> position);
-					printf("premi un tasto per continuare la ricerca: ");
-					fflush(stdin);
+					if (flag != 2){
+						printf("premi un tasto per continuare la ricerca: ");
+						fflush(stdin);
+					}
 					break;
 	/*			case 2:
 					break;*/
@@ -889,9 +896,6 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         char *text, *re_obj;
         int len = strlen(object), ret, retry;
 	message *mex;
-
-	printf("writeback start:\nobj = %s\nmyusr %s\n, dest = %s\n", object, my_usr, usr_dest);
-	fflush(stdin);
 
 	//invio destinatario
         write_string(sock_ds, usr_dest, 1296);

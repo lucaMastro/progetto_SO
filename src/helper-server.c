@@ -272,11 +272,10 @@ read_mess:
         	        error(158);
 		return -1;
 	}
-	stampa_messaggio(mex);
-
-	server[*position] = 1;
 
         /*      UPDATING SHARED PARAMS  */
+	server[*position] = 1;
+
         if (*position == *last){
                 *last = *last + 1;
                 *position = *position + 1;
@@ -338,31 +337,28 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         mex -> is_new = 0;
                         found = 0;
 			
-		//	if (flag != 2){
-				/*READING USR_WILL*/
+
+			
+			/*READING USR_WILL*/
 read_usr_will:
-        	                if (read_int(acc_sock, &op, 613))
-					return -1;
-				switch(op){
-					case 0:
-						ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
-						break;
+        	
+			if (read_int(acc_sock, &op, 613))
 	
-					case 1:
-	        	                        ret = gestore_eliminazioni(acc_sock, usr, mess_list, my_mex, my_new_mex, server, sem_write, position, last);
-        	        	                //goto read_usr_will;
-						break;
-				
-					case 2:
-						break;
-				
-					case 3:
-						leave = 1;
-						break;
-				}
-		//	}
-		//	else
-		//		leave = 1;
+				return -1;
+
+			switch(op){
+				case 0:
+					ricevi_messaggio(acc_sock, mess_list, position, last, server, sem_write, my_mex, my_new_mex, usr, 1);
+					break;
+				case 1:
+					ret = gestore_eliminazioni(acc_sock, usr, mess_list, my_mex, my_new_mex, server, sem_write, position, last);
+					break;
+				case 2:
+					break;
+				case 3:
+					leave = 1;
+					break;
+			}
 			if (flag == 2)
 				leave = 1;				
 		}
