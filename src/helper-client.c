@@ -772,8 +772,9 @@ void close_client(int sock_ds){
 }
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi
-        int is_mine, ret = 0, again, fine, code, scan_ret;
-	
+        int is_mine, ret = 0, again, fine, code, scan_ret, op;
+	message *mex;
+
         /*SCRIVO MODE*/
         write_int(sock_ds, mode, 326);
 
@@ -826,8 +827,38 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
         if (is_mine == 1){ //&& code <= MAX_NUM_MEX){ CHECK GIÀ FATTO
-                printf("codice accettato. attendi conferma eliminazione\n");
-
+                //printf("codice accettato. attendi conferma eliminazione\n");
+		printf("codice accettato.\n");
+		
+     		if ((mex = (message*) malloc(sizeof(message))) == NULL)
+                	error(24);
+		get_mex(sock_ds, mex, 1);
+read_conf:
+		printf(".......................Il messaggio che stai per eliminare è:.........................\n");
+                stampa_messaggio(mex);
+	        printf("......................................................................................\n");	
+	        printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+		printf("|                                                                                    |\n");
+	        printf("|   OPERAZIONE 0 : Annulla l'eliminazione del messaggio				     |\n");
+	        printf("|   OPERAZIONE 1 : Conferma l'eliminazione del messaggio			     |\n");
+		printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+		printf("\nQuale operazione vuoi svolgere?\n");
+	               
+		if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR){
+			free(mex);
+			error(140);
+		}
+		fflush(stdin);
+		not_accepted_code(scan_ret, &op, 2);
+		if (op < 0 || op > 1){
+			printf("codice non valido. riprovare\n");
+			goto read_conf;
+		}
+		write_int(sock_ds, op, 854);
+		if (!op)
+			goto exit_lab;
+		
+		printf("attendi conferma eliminazione...\n");
                 /*READ IF ELIMINATION WAS OK*/
                 read_int(sock_ds, &ret, 338);
 

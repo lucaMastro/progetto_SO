@@ -843,7 +843,7 @@ void stampa_bitmask(int *bitmask, int last){
 
 int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position, int *last){
 	/*mode >= 0 means this func is called after reading a mex */
-        int code, is_mine, compl, again, mode, ret = 0;
+        int code, is_mine, conf, again, mode, ret = 0;
         struct sembuf sops;
         message *mex;
 
@@ -873,6 +873,16 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
         if (is_mine == 1){
   //              printf("codice %d accettato\n", code);
+
+                mex = mex_list[code];
+		send_mex(acc_sock, mex, 1);
+		
+		/*LEGGO CONFERMA ELIMINAZIONE*/
+                if (read_int(acc_sock, &conf, 881))
+			return -1;
+		if (!conf)
+			return 1;;
+		
 
 //		printf("try to get control\n");
                 /*TRY GETTING CONTROL*/

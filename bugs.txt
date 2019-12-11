@@ -4,7 +4,6 @@
 
 
 
-
 aaaaaaaaaaaaaaaaaaaa
 
 NON FISSI:
@@ -227,3 +226,11 @@ NOTA: stesso scenario con "b" al posto di a*20 funziona bene
 - in gestore_eliminazioni <-> cancella_messaggio, c'era desincronizzazione nel caso venisse inserito un codice associato a un messaggio non mio
 	----> fixed: nel blocco else client-side rimosso il "goto another_code".
 	
+
+- nella lettura del singolo messaggio, dopo un write back, il campo "from" del messaggio risposta è strano. era nato dall'inserimento delle 
+funzionalità di rispondere e eliminare un messaggio letto col il suo codice. 
+	----> fixed: mancava lato server, dopo lo switch dell'operazione da eseguire, un:
+		if (flag == 2)
+			leave = 1;
+		che serviva a bloccare il write del nuovo valore di found alla fine del for
+
