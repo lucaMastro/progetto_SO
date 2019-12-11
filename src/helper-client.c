@@ -830,33 +830,35 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                 //printf("codice accettato. attendi conferma eliminazione\n");
 		printf("codice accettato.\n");
 		
-     		if ((mex = (message*) malloc(sizeof(message))) == NULL)
-                	error(24);
-		get_mex(sock_ds, mex, 1);
-read_conf:
-		printf(".......................Il messaggio che stai per eliminare è:.........................\n");
-                stampa_messaggio(mex);
-	        printf("......................................................................................\n");	
-	        printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
-		printf("|                                                                                    |\n");
-	        printf("|   OPERAZIONE 0 : Annulla l'eliminazione del messaggio				     |\n");
-	        printf("|   OPERAZIONE 1 : Conferma l'eliminazione del messaggio			     |\n");
-		printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-		printf("\nQuale operazione vuoi svolgere?\n");
+		if (mode < 0){
+	     		if ((mex = (message*) malloc(sizeof(message))) == NULL)
+        	        	error(24);
+			get_mex(sock_ds, mex, 1);
+	read_conf:
+			printf(".......................Il messaggio che stai per eliminare è:.........................\n");
+                	stampa_messaggio(mex);
+		        printf("......................................................................................\n");	
+		        printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+			printf("|                                                                                    |\n");
+		        printf("|   OPERAZIONE 0 : Annulla l'eliminazione del messaggio				     |\n");
+		        printf("|   OPERAZIONE 1 : Conferma l'eliminazione del messaggio			     |\n");
+			printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
+			printf("\nQuale operazione vuoi svolgere?\n");
 	               
-		if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR){
-			free(mex);
-			error(140);
+			if ((scan_ret = scanf("%d", &op)) == -1 && errno != EINTR){
+				free(mex);
+				error(140);
+			}
+			fflush(stdin);
+			not_accepted_code(scan_ret, &op, 2);
+			if (op < 0 || op > 1){
+				printf("codice non valido. riprovare\n");
+				goto read_conf;
+			}
+			write_int(sock_ds, op, 854);
+			if (!op)
+				goto exit_lab;
 		}
-		fflush(stdin);
-		not_accepted_code(scan_ret, &op, 2);
-		if (op < 0 || op > 1){
-			printf("codice non valido. riprovare\n");
-			goto read_conf;
-		}
-		write_int(sock_ds, op, 854);
-		if (!op)
-			goto exit_lab;
 		
 		printf("attendi conferma eliminazione...\n");
                 /*READ IF ELIMINATION WAS OK*/

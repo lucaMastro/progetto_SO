@@ -874,14 +874,16 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
         if (is_mine == 1){
   //              printf("codice %d accettato\n", code);
 
-                mex = mex_list[code];
-		send_mex(acc_sock, mex, 1);
+		if (mode < 0){
+	                mex = mex_list[code];
+			send_mex(acc_sock, mex, 1);
 		
-		/*LEGGO CONFERMA ELIMINAZIONE*/
-                if (read_int(acc_sock, &conf, 881))
-			return -1;
-		if (!conf)
-			return 1;;
+			/*LEGGO CONFERMA ELIMINAZIONE*/
+	                if (read_int(acc_sock, &conf, 881))
+				return -1;
+			if (!conf)
+				return 1;
+		}
 		
 
 //		printf("try to get control\n");
