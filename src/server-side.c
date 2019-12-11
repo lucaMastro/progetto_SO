@@ -51,7 +51,7 @@ void handler_sigint(){
 		}
 		free(message_list[i]);
 	}
-	system("rm -rf .db");	
+//	system("rm -rf .db");	
 	free(message_list);
 	exit(EXIT_SUCCESS);
 }
@@ -106,11 +106,10 @@ int main(int argc, char *argv[]){
 		exit(-1);
 	}
 
-	//FORSE NON SERVE
 	if (setsockopt(sock_ds, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1){
 		perror("impossibile settare opzione");
 		exit(EXIT_FAILURE);		
-	}//end
+	}
 	
 	bzero((char*) &server_addr, sizeof(server_addr));
 	
@@ -136,13 +135,11 @@ int main(int argc, char *argv[]){
 	
 	//make a new hidden folder, if not exist
 	if (mkdir(".db", S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO) == -1 && errno != EEXIST){
-
-	//if (mkdir("db", 0040000) == -1 && errno != EEXIST){
 		perror("error creating < db >");
 		exit(EXIT_FAILURE);
 	}
 	//creating the list of users
-        fileid = open(".db/list.txt", O_CREAT|O_TRUNC, 0666);
+        fileid = open(".db/list.txt", O_CREAT, 0666);
         if (fileid == -1)
                 error(142);
         else

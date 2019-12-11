@@ -16,8 +16,10 @@ HSRC	= src/helper.c
 HSSRC	= src/helper-server.c
 HCSRC	= src/helper-client.c
 
-crypt: clean $(CLIENT-CRYPT) $(SERVER-CRYPT) 
-not-crypt: clean $(CLIENT) $(SERVER)
+crypt: $(CLIENT-CRYPT) $(SERVER-CRYPT) 
+not-crypt: $(CLIENT) $(SERVER)
+crypt-clean: clean $(CLIENT-CRYPT) $(SERVER-CRYPT) 
+not-crypt-clean: clean $(CLIENT) $(SERVER)
 
 
 
