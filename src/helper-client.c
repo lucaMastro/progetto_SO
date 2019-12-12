@@ -355,6 +355,7 @@ get_dest:
 
         if (!ret){
                 printf("destinatario non esiste.\n\n"); 
+		free(mex -> usr_destination);
 
 		retry = operazioni_disponibili_invio(0);
 		write_int(sock_ds, retry, 221);
@@ -377,17 +378,22 @@ get_obj:
 
         len_obj = strlen(mex -> object);
         if (len_obj > MAX_OBJ_LEN){
-                printf("oggetto inserito troppo lungo.\n");
+                printf("oggetto inserito troppo lungo.\n");	
+		free(mex -> object);
 
 		retry = operazioni_disponibili_invio(1);
 		write_int(sock_ds, retry, 221);
 		
 		switch (retry){
 			case 0:
+				free(mex -> usr_destination);
 				goto get_dest;
 			case 1:
+				free(mex -> object);
 				goto get_obj;
 			case 2:
+				free(mex -> usr_destination);
+				free(mex -> object);
 				return;
 		}	
         }
@@ -407,14 +413,20 @@ get_mess:
 		retry = operazioni_disponibili_invio(2);
 		write_int(sock_ds, retry, 221);
 		
+		free(mex -> text);
 		switch (retry){
 			case 0:
+				free(mex -> usr_destination);
+				free(mex -> object);
 				goto get_dest;
 			case 1:
+				free(mex -> object);
 				goto get_obj;
 			case 2:
 				goto get_mess;
 			case 3:
+				free(mex -> usr_destination);
+				free(mex -> object);
 				return;
 		}	
         }
