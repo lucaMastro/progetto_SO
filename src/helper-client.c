@@ -33,12 +33,10 @@ void not_accepted_code(int scan_ret, int *codice_da_modificare, int valore_inacc
 
 void get_file_db(int sock_ds){
 
-	char *buffer, *token;
+	/* funzione che non memorizza la lista degli utenti registrati, ma la 
+	 * stampa solamente in fase di invio messaggi. */
+	char *buffer;
 	int found, is_first = 1;
-
-/*	buffer = (char*) malloc(sizeof(char) * (MAX_USR_LEN +1));
-	if (buffer == NULL)
-		error(195);*/
 
 	printf("[");
 	while (1){
@@ -58,7 +56,6 @@ void get_file_db(int sock_ds){
 		free(buffer); //in the while, cause each read_string does a malloc but doesnt free
 	}
 	printf("]");
-
 	return;
 }
 
@@ -70,22 +67,27 @@ void handler(int signo){
 }
 
 
-int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ //if flag == 1, only new messages will be print, if flag == 2, just print the mex in code position
-        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, maximal_code = 3, leave = 0, pos, code, scan_ret; 
-	/* minimal e maximal code sono parametri che servono a stabilire l'intervallo di valori validi
-	 * inseriti dall'utente. in particolare:
-	 * minimal code: è un parametro che serve a stabilire quale delle operazioni sarà disponibile 
-	 * 		 dopo aver ricevuto il messaggio. serve a stabilire se è possibile o meno 
-	 * 		 rispondere a un messaggio letto
-	 * maximal code: è un parametro che serve a discriminare il valore massimo tra quelli possibili
-	 * 		 nel set di operazioni possibili dopo aver letto un messaggio. serve solo nel 
-	 * 		 caso di flag == 2. */
-        char *sender, *object, *text;
+int leggi_messaggi(int sock_ds, char *my_usrname, int flag){ 
+	/* se flag == 2, tutti i messaggi dell'utente verranno stampati;
+	 * se flag == 1, verranno stampati solo i nuovi messaggi;
+	 * se flag == 2, verrà stampato solo il messaggio nella posizione
+	 * indicata dall'utente. */
+
         message *mex;
+        int found, again = 1, isnew, isfirst = 1, wb, can_i_wb, op, minimal_code, maximal_code = 3, leave = 0, pos, code, scan_ret; 
+	/* minimal e maximal code sono parametri che servono a staibilire 
+	 * l'intervallo di valori validi disponibili all'utente. in particolare:
+	 * 
+	 * minimal code: è un parametro che serve a stabilire se è possibile o 
+	 * meno rispondere a un messaggio letto;
+	 *
+	 * maximal code: è un parametro che serve a discriminare il valore massimo
+	 * tra quelli possibili nel set di operazioni possibili dopo aver letto 
+	 * un messaggio. serve solo nel caso di flag == 2. infatti è il caso in cui
+	 * va bloccata la ricerca di un nuovo messaggio*/
 
      	if ((mex = (message*) malloc(sizeof(message))) == NULL)
                 error(24);
-//	printf("sizeof mex: %ld\nsizeof message: %ld\n", sizeof(mex), sizeof(message));
 	
 	if (flag == 2){
 		maximal_code = 2;
@@ -107,7 +109,9 @@ start:
 		minimal_code = 0;
 		can_i_wb = 1;
 
-		get_mex(sock_ds, mex, 1); //non eseguito se la funzione è chiamata singolarmente (si vuole leggere un solo mes fornendone il codice) 
+		/* non eseguito se la funzione è chiamata con flag == 2 
+		 * (si vuole leggere un solo mes fornendone il codice) */
+		get_mex(sock_ds, mex, 1); 
 
 get_code:
 		/*PRINTING MESSAGE*/
@@ -160,15 +164,12 @@ get_code:
 		}
 		
 		printf("..............................Il messaggio ricevuto è:................................\n");
-		//printf("%p, len = %d\n", mex, strlen( mex -> object));
                 stampa_messaggio(mex);
 	        printf("......................................................................................\n");	
-//		if (flag != 2){
-	        	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
-		        printf("|                                                                                    |\n");
+	        printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
+	  	printf("|                                                                                    |\n");
 
                 	/*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
-
 	                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4 && !(mex -> is_sender_deleted))
 		        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
 			else{
@@ -203,9 +204,10 @@ usr_will:
 				goto usr_will;
 			}
 
-			/* se flag == 2, allora il codice di uscita (mostrato all'utente) è 2. 
-			 * settando op = 3, non devo più dividere i casi flag == 2 dagli altri, 
-			 * riutilizzando la stessa struttura di controllo lato server. */
+			/* se flag == 2, allora il codice di uscita (mostrato 
+			 * all'utente) è 2. settando op = 3, non devo più dividere
+			 * i casi flag == 2 dagli altri, potendo quindi 
+			 * riutilizzare la stessa struttura di controllo. */
 			if (flag == 2 && op == 2)
 				op = 3;
 
@@ -228,16 +230,15 @@ usr_will:
 						fflush(stdin);
 					}
 					break;
-	/*			case 2:
-					break;*/
 				case 3:
 					leave = 1;
 					break;
-				default:
+				default: //case 2: devo solo continuare il ciclo
 					break;
                 	}
 			if (flag == 2)
-				leave = 1;
+				leave = 1; //evita i successivi blocchi if
+
 			if (!leave){ //updating found
 				read_int(sock_ds, &found, 156);
 			}
@@ -246,10 +247,8 @@ usr_will:
         	        free(mex -> object);
         	        free(mex -> text);
 		}
-//		else
-//			goto exit_lab;
-//	}
 	
+	/* GESTIONE DEL CORRETTO MESSAGGIO DA STAMPARE IN BASE AI VARI CASI */
         if (!leave){ //eseguito solo con flag == 0 o flag == 1.
 		if (isfirst && !flag)
         	        printf("non ci sono messaggi per te\n");
@@ -266,14 +265,18 @@ usr_will:
 	                }
         	}
 	}
+
 exit_lab:
-      	
 	free(mex);
         return 0;
 
 }
 
 int operazioni_disponibili_invio(int mode){
+	/* funzione per riorganizzazione del codice. chiamata solo durante 
+	 * l'invio di un messaggio, in caso di errori sui parametri forniti 
+	 * dall'utente. */
+
 	int retry, scan_ret;	
 retry:
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
@@ -299,8 +302,7 @@ retry:
 }
 
 void invia_messaggio(int sock_ds, char *sender){
-        char *destination, *obj, *mes;
-        int len_dest, len_send, len_obj, len_mess, ret, retry;
+        int ret, retry;
 	message *mex;
 
 	        printf("\e[1;1H\e[2J");
@@ -376,8 +378,7 @@ get_obj:
 
         fflush(stdin);
 
-        len_obj = strlen(mex -> object);
-        if (len_obj > MAX_OBJ_LEN){
+        if (strlen(mex -> object) > MAX_OBJ_LEN){
                 printf("oggetto inserito troppo lungo.\n");	
 		free(mex -> object);
 
@@ -407,8 +408,7 @@ get_mess:
                 error(497);
         fflush(stdin);
 
-        len_mess = strlen(mex -> text);
-        if (len_mess > MAX_MESS_LEN){
+        if (strlen(mex -> text) > MAX_MESS_LEN){
                 printf("messaggio inserito troppo lungo.\n");
 		retry = operazioni_disponibili_invio(2);
 		write_int(sock_ds, retry, 221);
@@ -436,14 +436,11 @@ get_mess:
 	/*READING IF CAN WRITE*/
         read_int(sock_ds, &ret, 567);
 	if (ret < 0)	
-		printf("operazione temporaneamente fuori servizio. riprovare più tardi\n\n");
-/*	elseV
-		printf("messaggio ricevuto correttamente\n\n\n");*/
-
+		printf("Operazione temporaneamente fuori servizio. Riprovare più tardi\n\n");
 	else{
 	        //SENDING DATA
 		send_mex(sock_ds, mex, 0);
-	        printf("\n\ninvio del messaggio avvenuto con successo.\n");
+	        printf("\n\nInvio del messaggio avvenuto con successo.\n");
 	}
 	free(mex -> usr_destination);
 	free(mex -> object);
@@ -451,17 +448,18 @@ get_mess:
 	free(mex);
 }
 
+
+
 int usr_menu(int sock_ds, char *my_usrname){
 
         int operation, new_mex_avaiable, check_upd = 1, code = -1, ret, scan_ret;
-
 	signal(SIGINT, handler);
+
 select_operation:
         printf("\n\nlogin effettuato come: %s\n\n", my_usrname);
 
         if (check_upd){
                 //Reading if there are new mex
-
                 read_int(sock_ds, &new_mex_avaiable, 1079);
                 check_upd = 0;
         }
@@ -501,8 +499,7 @@ select_operation:
         fflush(stdin);
 
         if (operation > 9 || operation < 0){
-                printf("operazione non valida\n");
-                printf("premi un tasto per riprovare:");
+                printf("Operazione non valida.\nPremi un tasto per riprovare:");
                 fflush(stdin);
                 printf("\e[1;1H\e[2J");
                 goto select_operation;
@@ -521,7 +518,6 @@ select_operation:
                 case 1:
                         leggi_messaggi(sock_ds, my_usrname, 0);
                         check_upd = 1;
-//                      fflush(stdin);
                         break;
                 case 2:
                         leggi_messaggi(sock_ds, my_usrname, 1);
@@ -564,7 +560,6 @@ select_operation:
 }
 
 void usr_registration_login(int sock_ds, char **usr){
-//      printf("not implemented yet :)\n");
         int ret, operation, len, retry, scan_ret;
         char *pw;
 
@@ -615,7 +610,6 @@ portal:
         }
 
         //same structure for registration and login
-        //change menu view
         printf("\e[1;1H\e[2J");
 
         printf(".....................................................................................\n");
@@ -721,7 +715,6 @@ get_op1:
                                 goto get_op1;
                 }
         }
-//      fflush(stdin);
 
         write_int(sock_ds, retry, 522);
         write_string(sock_ds, pw, 523);
@@ -760,7 +753,6 @@ get_op1:
                         break;
                 case 4:
                         printf("password o usrname troppo lunghi, per favore riprova.\npremi INVIO per continuare\n");
-                        //while(getchar() != '\n') {};
                         fflush(stdin);
                         goto portal;
                         break;
@@ -784,7 +776,7 @@ void close_client(int sock_ds){
 }
 
 int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata separatamente a leggi_messaggi
-        int is_mine, ret = 0, again, fine, code, scan_ret, op;
+        int is_mine, ret = 0, again, code, scan_ret, op;
 	message *mex;
 
         /*SCRIVO MODE*/
@@ -922,6 +914,7 @@ exit_lab:
 
 
 int operazioni_disponibili_wb(){
+	/* funzione inserita per modularità e chiamata solo da write_back. */
 	int retry, scan_ret;	
 retry:
         	printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
@@ -943,12 +936,12 @@ retry:
 }
 
 int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
-        char *text, *re_obj;
         int len = strlen(object), ret, retry;
 	message *mex;
 
 	//invio destinatario
         write_string(sock_ds, usr_dest, 1296);
+
         //reading response if destination exists:
         read_int(sock_ds, &ret, 1299);
         if (!ret){
@@ -970,10 +963,9 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
 get_mex:
         /*GETTING THE TEXT FROM USR*/
-        printf("inserisci il messaggio:\n");
+        printf("inserisci il messaggio (max %d caratteri):\n", MAX_MESS_LEN);
         if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
                 error(1235);
-
         fflush(stdin);
 
 	if (strlen(mex -> text) > MAX_MESS_LEN){
@@ -992,7 +984,6 @@ get_mex:
 	write_int(sock_ds, retry, 221);
 	
 	/*READING IF THE MEX CAN BE STORED*/
-
         read_int(sock_ds, &ret, 567);
 	if (ret < 0)	
 		printf("operazione temporaneamente fuori servizio. riprovare più tardi\n\n");
@@ -1009,9 +1000,10 @@ get_mex:
         return 1;
 }
 
-int delete_me(int sock_ds){//, char *usr){
-        /*client-side version of elimination*/
-        int ok;
+int delete_me(int sock_ds){
+        /*client-side version of elimination: just waiting for a confirm*/
+
+	int ok;
 
 	printf("attendo conferma eliminazione.\n");
         read_int(sock_ds, &ok, 1347);
@@ -1019,7 +1011,6 @@ int delete_me(int sock_ds){//, char *usr){
                 printf("account eliminato con successo. ");
         else
                 printf("impossibile eliminare account.\n");
-
         return ok;
 
 }
