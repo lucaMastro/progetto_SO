@@ -34,12 +34,12 @@ void send_file_db(int acc_sock){
 		for (i = 0; i < MAX_USR_LEN + 1; i++){ //voglio leggere sempre anche lo \n
 			if ((sentinel = read(fileid, &curr, 1)) == -1)
 				error(32);
-			else if (sentinel == 0){
+			else if (sentinel == 0){ //fine file
 				found = 0;
 				break;
 			}
 				
-			if (curr == '\n')
+			if (curr == '\n') //ultimo carattere di una riga. non lo copio in "usr".
 				break;
 			else
 				usr[i] = curr;
@@ -59,10 +59,15 @@ void update_db_file(char *deleting_string){
 	char curr_usr[MAX_USR_LEN + 2], del_string[MAX_USR_LEN + 2], c;
 	int fileid, fileid2, i;
 
+	/* curr_usr e del_string di dimensione "max_usr_len + 2" perchè devono 
+	 * contenere sia il "\n" del file che il terminatore di stringa.
+	 * del_string serve a fare il confronto con ogni riga letta: la riga letta
+	 * dal file, infatti, conterrà il "\n" alla fine. in questo modo è possibile
+	 * fare il confronto senza dover modificare la stringa passata come 
+	 * parametro. */
 	bzero(del_string, MAX_USR_LEN + 2);
 	sprintf(del_string, "%s\n", deleting_string);
 	
-//	printf("deleting string: %s, its len: %d\n", deleting_string, strlen(deleting_string));
 	fileid = open(".db/list.txt", O_CREAT | O_RDWR, 0666);
 	if (fileid == -1)
 		error(7);
@@ -76,7 +81,8 @@ void update_db_file(char *deleting_string){
 		bzero(curr_usr, MAX_USR_LEN + 2);
 		i = 0;
 		c = '\0';
-		while (c != '\n'){
+
+		while (c != '\n'){//while for reading a line
 			if (read(fileid, &c, 1) == -1){
 				perror("errore read");
 				exit(-1);
@@ -86,6 +92,7 @@ void update_db_file(char *deleting_string){
 				break;
 			i++;
 		}
+
 		if (strcmp(curr_usr, del_string) != 0)
 			write(fileid2, curr_usr, strlen(curr_usr));
 		if (c == '\0'){
@@ -99,9 +106,8 @@ void update_db_file(char *deleting_string){
 
 
 message** inizializza_server(){ //sequenza di messaggi
-	int i, fileid;
+	int i;
 	message **mex_list;
-//	message *mex;
 
 	mex_list = (message**) malloc(sizeof(message) * MAX_NUM_MEX);
 	if (mex_list == NULL){
@@ -110,13 +116,13 @@ message** inizializza_server(){ //sequenza di messaggi
        	}
 
 	for (i = 0; i < MAX_NUM_MEX; i++){
-	//	mex = mex_list[i];
 	       	
-		/*alloco solo l'indirizzo del messaggio, isnew, e position:
+		/*  alloco solo l'indirizzo del messaggio, isnew, e position:
 		 *  sono gli unici campi che lato client non mi vengono inviati, 
-		 *  per cui nella funzione get_mex non verranno parsati. tutti
-		 *  gli altri campi, invece, vengono parsati da quella e funzione
-		 *  e, in quel momento, allocati.	*/
+		 *  per cui nella funzione get_mex non verranno parsati (lato 
+		 *  server). tutti gli altri campi, invece, vengono parsati 
+		 *  da quella e funzione e, in quel momento, allocati.	*/
+
 		mex_list[i] = (message*) malloc(sizeof(message));
 		if (mex_list[i] == NULL)
 			error(27);
@@ -135,8 +141,8 @@ message** inizializza_server(){ //sequenza di messaggi
 
 
 int ricevi_messaggio(int acc_sock, message **mess_list, int *position, int *last, int *server, int sem_write, int *my_mex, int *my_new_mex, char *client_usr, int flag){ //flag == 1 means its a write back
-	char *usr_destination, *usr_sender, *object, *text, *destination_file;
-	int i, len, fileid, exist, get_out, retry, can_i_get = 1;
+	char *usr_destination; 
+	int exist, retry, can_i_get = 1;
 	struct sembuf sops;
 
 	sops.sem_flg = 0;
@@ -241,12 +247,13 @@ read_mess:
 	}
 	
 //	printf("try to get control\n");
+	
 	/*	TRY TO GET CONTROL	*/
 	if (semop(sem_write, &sops, 1) == -1)
 		error(255);
-//	printf("controllo preso\n");
-	
-	//sleep(10); //wait 10 seconds to test concorrence
+
+//	printf("controllo preso\n");	
+//	sleep(10); //wait 10 seconds to test concorrence
 	
 	if (*position == MAX_NUM_MEX){
 		can_i_get = -1;
@@ -265,8 +272,8 @@ read_mess:
 
 	message *mex = mess_list[*position];
 	if (!get_mex(acc_sock, mex, 0)){
-		/*i catched a ctrl+c signal in client-side. i have to increment 
-		 * the semaphore*/
+		/* ho catturato un ctrl+c client-side: devo incrementare il 
+		 * semaforo prima di chiudere il collegamento */
         	sops.sem_op = 1;
 	        if (semop(sem_write, &sops, 1) == -1)
         	        error(158);
@@ -297,10 +304,9 @@ read_mess:
 
 int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int flag, int *my_mex, int *my_new_mex, int *server, int sem_write, int *position){
         //server side
-        int i, found = 0, isnew, len_send, len_obj, len_text, pos, again, ret = 0, temp_last = *last, op, leave = 0, code, starting_index = 0;
+        int i, found = 0, isnew, ret = 0, temp_last = *last, op, leave = 0, code, starting_index = 0;
         message *mex;
-//      char *sender, *obj, *text;
-
+	
 	if (flag == 2){
 		//devo leggere un solo messaggio, inviatomi dal client
 		if (read_int(acc_sock, &code, 331))
@@ -308,19 +314,19 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
 		if (code == -1)
 			return 1; //exit conditions
 		else{
-			//setto i valori in modo che nel for io legga un solo messaggio
+			/* setto i valori in modo che nel for il primo (e 
+			 * solo) messaggio ad essere letto, in caso di flag == 2, 
+			 * sia quello il cui codice è specificato in "code".*/
 			starting_index = code;
 			temp_last = starting_index + 1;
 		}
 	}
-//	printf("starting %d, end %d\n", starting_index, temp_last);
 
         for (i = starting_index; i < temp_last; i++){
 		if (leave)
 			break;
 
                 mex = mess_list[i];
-    //          stampa_messaggio(mex);
                 if (my_mex[i] == 1){
 
                         //parsing dei campi del messaggio:
@@ -337,13 +343,10 @@ int gestore_letture(int acc_sock, message **mess_list, int *last, char *usr, int
                         mex -> is_new = 0;
                         found = 0;
 			
-
-			
 			/*READING USR_WILL*/
 read_usr_will:
         	
-			if (read_int(acc_sock, &op, 613))
-	
+			if (read_int(acc_sock, &op, 613))	
 				return -1;
 
 			switch(op){
@@ -413,7 +416,6 @@ is_read_op:
                                 if (ret >= 0)
                                         printf("messaggi consegnati con successo\n");
                                 else{
-                                	//log_out(client_usrname);
                                 	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
@@ -432,18 +434,14 @@ is_read_op:
 
                                 ret = ricevi_messaggio(acc_sock, message_list, position, last, server, sem_write, my_mex, my_new_mex, client_usrname, 0);
                                 if (ret < 0){
-					//log_out(client_usrname);
                                 	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
-/*                              printf("il messaggio inserito è:\n\n");
-                                stampa_messaggio(message_list[*position - 1]);//stampo accedendo alla lista*/
                                 break;
 
                         case 5:
                                 ret = gestore_eliminazioni(acc_sock, client_usrname, message_list, my_mex, my_new_mex, server, sem_write, position, last);
 				if (ret < 0){
-                                	//log_out(client_usrname);
                                 	close_server(acc_sock, client_usrname, 1);
 					return 1;
 				}
@@ -457,7 +455,6 @@ is_read_op:
                                 printf("stato aggiornato.\n");
                                 break;
                         case 7:
-                                //log_out(client_usrname);
                                 close_server(acc_sock, client_usrname, 1);
 				return 1;
                         case 8:
@@ -480,8 +477,10 @@ is_read_op:
 
 
 void random_salt(char salt[3]){
-
-	/* intervallo di valori per il salt: [a-zA-Z0-9./]
+	/* aggiorna salt, passato come parametro, inserendo 2 valori casuali tra
+	 * quelli accettabili per il salt nella funzione crypt_r.
+	 *
+	 * intervallo di valori per il salt: [a-zA-Z0-9./]
          * a-z: 26
          * A-z: 26
          * 0-9: 10
@@ -518,25 +517,6 @@ int managing_usr_registration_login(int acc_sock, char **usr){
 	char salt[2 + 1], *crypted;
 	struct crypt_data data;
 	data.initialized = 0;
-//	int random_value;
-
-	/* intervallo di valori per il salt: [a-zA-Z0-9./]
-         * a-z: 26
-         * A-z: 26
-         * 0-9: 10
-         * ./ :  2 
-         * totale: 64 */
-/*        char values[64 + 1];
-        for (i = 0; i < 26; i++){
-                values[i] = (char) (i + 97);
-                values[i + 26] = (char) (i + 65); //maiuscole 
-        }
-        for (i = 52; i < 62; i++)
-                values[i] = (char) (i - 4);
-        values[62] = '.';
-        values[63] = '/';*/
-	
-	
 #endif
 
 check_operation:
@@ -545,12 +525,6 @@ check_operation:
         bzero(stored_pw, MAX_PW_LEN + 1);
 #else
         bzero(stored_pw, 14);
-/*	bzero(salt, 3);
-
-	for (i = 0; i < 2; i++){
-		random_value = rand() % 64;
-		salt[i] = values[random_value];
-	}*/
 	random_salt(salt);
 #endif
 
@@ -588,7 +562,7 @@ check_operation:
 			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
-		//(*usr)[strlen(*usr)] = '\0';
+
                 /*      READING IF RETRY GETTING PASSWORD       */
                 check_pw_restart:
                 if (read_int(acc_sock, &retry, 344)){
@@ -622,9 +596,7 @@ check_operation:
 
 #ifdef CRYPT
 		/*crypting password*/
-		//generare casualmente salt
-//		strcpy(salt, "AF");
-		len_pw = 13; // strlen(crypted); //13
+		len_pw = 13; // strlen(crypted) == 13
 
 #endif
 
@@ -654,7 +626,7 @@ check_operation:
                         fileid2 = open(".db/list.txt", O_CREAT|O_RDWR|O_APPEND, 0666);
                         if (fileid2 == -1)
                                 error(439);
-//                      printf("user = %s\n, len = %d\nbol = %d\n\n", *usr, len_usr, strcmp(*usr, "a\0"));
+
                         if (write(fileid2, *usr, strlen(*usr))  == -1 || write(fileid2, "\n", 1) == -1)
                                 error(441);
                         close(fileid2);
@@ -693,7 +665,6 @@ check_operation:
                         }
 			crypted = crypt_r(pw, salt, &data);
 
-                //      printf("pw = %s, stored = %s\n", pw, stored_pw);
                         /*      CHECKING IF PW IS CORRECT       */
                         if (strcmp(stored_pw, crypted) != 0){
                                 printf("no matching pw\n");
@@ -713,7 +684,6 @@ check_operation:
                                         stored_pw[i] = curr;
                         }
 
-                //      printf("pw = %s, stored = %s\n", pw, stored_pw);
                         /*      CHECKING IF PW IS CORRECT       */
                         if (strcmp(stored_pw, pw) != 0){
                                 printf("no matching pw\n");
@@ -743,26 +713,21 @@ check_operation:
                 }
         }
 send_to_client:
-//        close(fileid);
         free(file_name);
 	free(pw); //read_string doesnt free the string
-	if (operation == 1){
+	if (operation == 1)
 		/* if it was a registration, i have to free the usrname, 'cause
 		 * i will read another string, using malloc again for the new usr */
 		free(*usr); 
-	}
+	
 
         /*      SENDING SERVER ANSWER TO CLIENT */
         write_int(acc_sock, ret, 997);
 
         if (!can_i_exit)//registration option completed
                 goto check_operation;
-        else{
+        else
                 return 1;
-	/*	close_server(acc_sock, *usr, 1);
-		return 0;*/
-	}
-
 }
 
 
@@ -770,11 +735,11 @@ send_to_client:
 
 
 
-void close_server(int acc_sock, char *usr, int flag){ //flag = 1 means i have to logout
-      if (close(acc_sock) == -1)
+void close_server(int acc_sock, char *usr, int flag){ 
+	/* flag == 1 means i have to logout. flag != 1 when im deleting usr */
+  	if (close(acc_sock) == -1)
                 error(541);
 
-//        printf("starting log out\n");
 	if (flag)        
 	   	log_out(usr);   
         printf("collegamento chiuso con successo.\n");
@@ -783,50 +748,48 @@ void close_server(int acc_sock, char *usr, int flag){ //flag = 1 means i have to
 
 int update_system_state(int *my_mex, int *my_new_mex, message **mex_list, char *usr, int last, int *server){
         int i, cmp, found_new = 0;
-//      printf("\n\nupdate system:\n");
+	/* aggiorna le bitmask. *server deve già essere aggiornato. */
 
         for (i = 0; i < last; i++){
-                if (!server[i]){
+                if (!server[i]){ //free slot
                         my_mex[i] = -1;
                         my_new_mex[i] = -1;
-                        continue;
                 }
-                cmp = strcmp(mex_list[i] -> usr_destination, usr);
-                if (!cmp){
-                        my_mex[i] = 1;
-                        if (mex_list[i] -> is_new == 1){
-                                my_new_mex[i] = 1;
-                                found_new = 1;
-                        }
-                        else{
-                                my_new_mex[i] = 0;
-                        }
-                }
-                else{//not message for me: or its free or its for others
-                        cmp = strcmp(mex_list[i] -> usr_destination, "");
-                        if (!cmp){ //free slot
-                                my_mex[i] = -1;
-                                my_new_mex[i] = -1;
-//                              server[i] = 0;
-                        }
-                        else{ //for others
-                                my_mex[i] = 0;
-                                my_new_mex[i] = 0;
-                        }
-                }
+		else{
+			//check if it was sent to me
+	                cmp = strcmp(mex_list[i] -> usr_destination, usr);
+        	        if (!cmp){ //its mine
+                	        my_mex[i] = 1;
+                        	if (mex_list[i] -> is_new == 1){
+                                	my_new_mex[i] = 1;
+	                                found_new = 1;
+        	                }
+                	        else{
+                        	        my_new_mex[i] = 0;
+                        	}
+	                }
+	                else{//not message for me
+				my_mex[i] = 0;
+				my_new_mex[i] = 0;
+        	        }
+		}
         }
         return found_new;
 }
 
-
 void update_position(int *position, int *server, int last){
         int i;
-        for(i = 0; i < last + 1; i++)
+	/* position rappresenta la posizione in cui verrà memorizzato il prossimo
+	 * messaggio che verrà inviato. voglio che venga inserito nel primo slot
+	 * utile: se ho server = [1, 1], e il messaggio in posizione 0 viene 
+	 * eliminato (server = [0, 1]) voglio che il prossimo messaggio venga
+	 * memorizzato in posizione 0. */
+        for(i = 0; i < last + 1; i++){
                 if (!server[i]){
                         *position = i;
                         break;
                 }
-
+	}
 }
 
 void stampa_bitmask(int *bitmask, int last){
@@ -852,29 +815,24 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 		return -1;
 
         if (mode >= 0)
-	 	code = mode;
-	
+	 	code = mode;	
         else{
                 another_code:
                 if (read_int(acc_sock, &code, 374))
 			return -1;
 	}
 
-    // 	printf("code = %d\n", code);
         if (code < 0){
-                printf("opearazione annullata client side\n\n");
+                printf("operazione annullata client side\n\n");
                 return 1;
         }
 
         is_mine = my_mex[code];
-//	printf("ismine = %d\n", is_mine);
         /*SEND IF THE CODE IS ACCEPTED*/
         write_int(acc_sock, is_mine, 383);
 
         if (is_mine == 1){
-  //              printf("codice %d accettato\n", code);
-
-		if (mode < 0){
+		if (mode < 0){ 
 	                mex = mex_list[code];
 			send_mex(acc_sock, mex, 1);
 			//il messaggio è stato letto in fase di eliminazione:
@@ -889,7 +847,8 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 		
 
 //		printf("try to get control\n");
-                /*TRY GETTING CONTROL*/
+                
+		/*TRY GETTING CONTROL*/
                 sops.sem_flg = 0;
                 sops.sem_num = 0;
                 sops.sem_op = -1;
@@ -897,8 +856,8 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                         error(398);
 
 //		sleep(10); //wait 10 seconds to test concorrence
-//		
 //		printf("ho preso il controllo\n");
+//
                 /*START EMPTYNG MESSAGE*/
                 mex = mex_list[code];
                 free(mex -> usr_destination);
@@ -913,7 +872,8 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 
                 /*START UPDATING SHARED PARAMS*/
                 if (code == *last - 1)
-                        //*last = code;  /*se ho server = [0 0 0 0 0 1], e viene cancellato il mess in posizione 5, devo stampare [], e non [0 0 0 0 0]*/
+                        /* se ho server = [0 0 0 0 0 1], e viene cancellato il mess
+			 * in posizione 5, devo stampare [], e non [0 0 0 0 0]*/
                         update_last(server, last);
                 if (code < *position)
                         *position = code;
@@ -927,24 +887,8 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
                         error(422);
 
                 /*SENDING ELIMINATION COMPLETED*/
-/*               compl = 1;
-                write_int(acc_sock, compl, 415);*/
                 write_int(acc_sock, 1, 415);
         }
-//        else{//not is mine.
-    /*            if (mode >= 0) //trying deleting again the same mex after read it: non più possibile
-                        printf("messaggio già eliminato\n");
-                else*/
-
-//		//checking if usr wants to retry
-  //              if (read_int(acc_sock, &again, 374))
-//			return -1;
-		
-  //              if (again)
-    //                    goto another_code;
-//		else
-  //              goto another_code;
-    //    }
 
         if (mode < 0){ 
 		/* se chiamata separatamente dalle letture, verifico se eliminare 
@@ -965,10 +909,17 @@ int gestore_eliminazioni(int acc_sock, char *usr, message **mex_list, int *my_me
 void update_last(int *server, int *last){
         int i, old = *last;
 
+	/* voglio che l'ultimo valore da stampare sia un 1. procedendo all'indietro,
+	 * ogni volta che trovo uno 0 diminuisco il valore di *last. quando trovo un
+	 * 1 interrompo la ricerca e l'aggiornamento.
+	 *
+	 * NOTA: questa funzione DEVE essere chiamata solo dopo aver preso un 
+	 * 	 gettone dal semaforo per le scritture: *last è, infatti, un 
+	 * 	 parametro condiviso a tutti i threads. */
+
         for (i = old - 1; i > -1; i--)
                 if (server[i] == 0)
                         *last = i;
-
                 else
                         break;
 }
@@ -987,7 +938,6 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
         /*MAKE THE STRING .db/<usr>.txt */
         sprintf(dest, ".db/%s.txt", usr);
 
-
         if (unlink(dest) == -1){
                 printf("impossibile eliminare file.\n");
                 bol = 0;
@@ -997,22 +947,32 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
                 bol = 1;
         }
 
-        /*must set 0 on server, and freeing my messages*/
-
         /*TRY GETTING CONTROL*/
-
         sops.sem_flg = 0;
         sops.sem_num = 0;
         sops.sem_op = -1;
         if (semop(sem_write, &sops, 1) == -1)
                 error(1294);
+
 	//sleep(10); //wait 10 seconds to test concorrence	
 	
         for (i = 0; i < *last; i++){
 		mex = mex_list[i];
-                //if (my_mex[i] == 1){ //i is the index of a mex i have to free cause it was destinated to the deleting usr
 		if (!strcmp(mex -> usr_destination, usr)){
-                        /*START EMPTYNG MESSAGE*/
+                	/* non viene usato:
+			 * if (my_mex[i] == 1){
+			 * perchè altrimenti ho dei problemi di concorrenza:
+			 * a invia un messaggio a b
+			 * 				b decide di eliminarsi
+			 * messaggio inviato mentre l'eliminazione di b è in attesa.
+			 * b riprende e completa l'eliminazione
+			 *
+			 * in questo scenario, il my_mex di b non viene aggiornato:
+			 * dopo la consegna del messaggio, viene aggiornato il 
+			 * my_mex di a, che ha consegnato il messaggio, non quello 
+			 * di b. */
+
+			/*START EMPTYNG MESSAGE*/
 
         	        free(mex -> usr_destination);
 	                free(mex -> usr_sender);
@@ -1022,12 +982,14 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 
                         /*START UPDATING BITMASKS*/
                         server[i] = 0;
-//                      update_system_state(my_mex, my_new_mex, mex_list, usr, *last, server);
 
                         if (i < *position)
-                                *position = i; //eseguito almeno una volta 100%
+                                *position = i;
                 }
-		else{//non è un messaggio per me: controllo se l'ho inviato io e, in tal caso, setto a 1 il campo "is_sender_deleted"
+		else{
+			/* non è un messaggio per me: controllo se l'ho inviato io 
+			 * e, in tal caso, setto a 1 il campo "is_sender_deleted":
+			 * questo impedisce all' usr_destination di rispondere */
 			if (!strcmp(mex -> usr_sender, usr))
 			       mex -> is_sender_deleted = 1;		
 		}
@@ -1051,26 +1013,23 @@ int delete_user(int acc_sock, char *usr, message **mex_list, int *server, int *m
 
 
 
-int check_destination(char **usr_destination, char **dest){  //se dest è != NULL, si copierà il valore ".db/<usr_dest>.txt\0". deve essere però già allocato
-        int len = strlen(*usr_destination) + 8, fileid, copy = 0;
+int check_destination(char **usr_destination, char **dest){ 
+       	/* se dest è != NULL, si copierà il valore ".db/<usr_dest>.txt\0". 
+	 * deve essere però già allocato */
+        int len = strlen(*usr_destination) + 9, fileid;
         char *destination_file;
 	
-        if (dest != NULL)
-                copy = 1;
-
-        if ((destination_file = (char*) malloc(sizeof(char) * (len + 1))) == NULL)
+        if ((destination_file = (char*) malloc(sizeof(char) * len)) == NULL)
                 error(191);
-
-        bzero(destination_file, len + 1);
+        bzero(destination_file, len);
         sprintf(destination_file, ".db/%s.txt", *usr_destination);
-        if (copy)
+
+        if (dest != NULL)
                 strcpy(*dest, destination_file);
 
         if ((fileid = open(destination_file, O_RDONLY)) == -1){
-                if (errno == ENOENT){
-                        //file doesnt exist
+                if (errno == ENOENT) //file doesnt exist
                         return 0;
-                }
                 else
                         error(205);
         }
@@ -1096,15 +1055,10 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 	data.initialized = 0;
 #endif
 
-	len = strlen(my_usr) + 8;
-        dest_file = (char *) malloc(sizeof(char) * (len + 1));
+	len = strlen(my_usr) + 9;
+        dest_file = (char *) malloc(sizeof(char) * len);
         if (dest_file == NULL)
                 error(1442);
-
-	/*new_pw = malloc(sizeof(char) * MAX_PW_LEN);
-	if (new_pw == NULL)
-		error(694);
-	bzero(new_pw, MAX_PW_LEN);*/
 
         if (read_string(acc_sock, &new_pw, 1548)){
 		free(dest_file);
@@ -1115,39 +1069,40 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 //	printf("pw_len = %d\n", pw_len);
 
         exist = check_destination(&my_usr, &dest_file);
-        if (exist){
-                /*      APRO IL FILE, LO SVUOTO*/
-                fileid = open(dest_file, O_RDWR|O_TRUNC|O_APPEND, 0666);
-                if (fileid == -1){
-			free(dest_file);
-                        perror("error at line 1544");
-                        goto exit_lab;
-                }	
-		free(dest_file);
-	#ifdef CRYPT
-		/*crypto la pass*/
-		random_salt(salt);
-		crypted = crypt_r(new_pw, salt, &data);
+	/* non è necessario un controllo su exist, perchè se sto chiamando la 
+	 * funzione devo essere per forza loggato */
 
-                /*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */
-                if (write(fileid, crypted, strlen(crypted)) == -1 || write(fileid, "\n1", 2) == -1) {
-                        perror("error at 1559");
-                        goto exit_lab;
-                }
-	#else
-                /*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */
-                if (write(fileid, new_pw, pw_len) == -1 || write(fileid, "\n1", 2) == -1) {
-                        perror("error at 1559");
-                        goto exit_lab;
-                }
-	#endif
-                /*      CHIUDO FILE     */
-                if (close(fileid) == -1){
-                        perror("error at 1566");
-                        goto exit_lab;
-                }
-                ret = 1;
-        }
+  	/*      APRO IL FILE, LO SVUOTO*/        
+	fileid = open(dest_file, O_RDWR|O_TRUNC|O_APPEND, 0666);
+	if (fileid == -1){
+		free(dest_file);
+ 		perror("error at line 1544");
+		goto exit_lab;
+	}	
+	free(dest_file);
+#ifdef CRYPT
+	/*crypto la pass*/
+	random_salt(salt);
+	crypted = crypt_r(new_pw, salt, &data);
+	/*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */
+	if (write(fileid, crypted, strlen(crypted)) == -1 || write(fileid, "\n1", 2) == -1) {
+		perror("error at 1559");
+		goto exit_lab;
+	}
+#else
+	/*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */
+	if (write(fileid, new_pw, pw_len) == -1 || write(fileid, "\n1", 2) == -1) {
+		perror("error at 1559");
+		goto exit_lab;
+	}
+#endif
+	/*      CHIUDO FILE     */
+	if (close(fileid) == -1){
+		perror("error at 1566");
+		goto exit_lab;
+	}
+	ret = 1;
+       // }
 exit_lab:
 	free(new_pw);
         write_int(acc_sock, ret, 1572);
