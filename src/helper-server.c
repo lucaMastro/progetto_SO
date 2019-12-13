@@ -506,10 +506,11 @@ void random_salt(char salt[3]){
 }
 
 
-int managing_usr_registration_login(int acc_sock, char **usr){
+int managing_usr_registration_login(int acc_sock, char **usr, int sem_log){
         int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
         char *pw, *file_name,  is_log, curr;
         int fileid, fileid2;
+	struct sembuf sops;
 #ifndef CRYPT
 	char stored_pw[MAX_PW_LEN + 1];
 #else
@@ -640,6 +641,10 @@ check_operation:
                 else{//it was a log in operation
                         //opening file:
                         printf("selected login option.\n");
+			sops.sem_flg = 0;
+			sops.sem_num = 0;
+			sops.sem_op = -1;
+
                         if ((fileid = open(file_name, O_RDWR, 0666)) == -1){
                                 if (errno == ENOENT){ //file doesn exist
                                         ret = 2;
@@ -692,11 +697,25 @@ check_operation:
                         }
 		#endif
                         /*      CHECK IF YET LOGED      */
+			/* deve essere fatto in modo atomico */
+			if (semop(sem_log, &sops, 1) == -1)
+				error(702);
+
                         if (read(fileid, &is_log, 1) == -1)
                                 error(923);
 
+			/* test sncronizzazione
+			if (!strcmp(*usr, "a")){
+				printf("sleeping\n");
+				sleep(10);
+			}*/
+
                         if((atoi(&is_log)) == 1){
                                 printf("usr already logged\n");
+				//incremento semaforo
+				sops.sem_op = 1;
+				if (semop(sem_log, &sops, 1) == -1)
+					error(702);
                                 ret = 3;
                                 goto send_to_client;
                         }
@@ -705,6 +724,10 @@ check_operation:
                         lseek(fileid, i + 1, SEEK_SET);
                         if (write(fileid, "1", 1) == -1)
                                 error(934);
+
+			sops.sem_op = 1;
+			if (semop(sem_log, &sops, 1) == -1)
+				error(702);
 
         		close(fileid);
                         

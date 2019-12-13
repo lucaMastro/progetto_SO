@@ -259,3 +259,9 @@ quindi la condizione di write back restituiva 1, anche se doveva essere 0.
 		(int) (strlen(mex -> object))
 		cast espicito a intero.
 
+
+
+- possibile 2 login dello stesso account: se metto 
+	fflush(stdin);
+dopo aver letto il bit ma prima di confrontarlo con 1, potrei loggare 2 utenti con lo stesso usrname
+	---> fixed aggiungendo un semaforo

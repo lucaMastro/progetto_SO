@@ -29,6 +29,7 @@ message **message_list;
 int position = 0; //puntatore alla posizione minima in cui salvare un messaggio
 int fileid, last = 0; //puntatore alla prossima posizione in cui memorizzare un messaggio.
 int sem_write; //write sem's: synchronizing write of mess, deleting
+int sem_log; 
 int server[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = 0}; //bitmask for messages of server. it must be shared
 
 //__thread int acc_sock;
@@ -85,11 +86,15 @@ int main(int argc, char *argv[]){
 		perror("error secmtl");
 		exit(EXIT_FAILURE);
 	}
-	/*message_list = malloc(sizeof(message) * MAX_NUM_MEX);
-	if (message_list == NULL){
-		perror("error initializing mex list");
+	sem_log = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666 );
+	if (sem_log == -1){
+		perror("error initializing semaphore");
 		exit(EXIT_FAILURE);
-	}*/
+	}
+	if (semctl(sem_log, 0, SETVAL, 1) == -1){
+		perror("error secmtl");
+		exit(EXIT_FAILURE);
+	}
 
 	message_list = inizializza_server();
 	printf("struttura per gestione dei messaggi inizializzata\n");
@@ -202,23 +207,20 @@ void *thread_func(void *sock_ds){
 			
 	char *client_usrname;
 	struct sembuf sops;
+//	struct sembuf sops_log;
 	int acc_sock, is_usr_freed;
 
 
 	acc_sock = *((int *)sock_ds);	
 
 	
-/*	if ((client_usrname = malloc(sizeof(char) * (MAX_USR_LEN + 1))) == NULL){
-		perror("impossibile allocare usrname");
-		exit(EXIT_FAILURE);
-	}*/
 
 	while(1){	
 		//bzero(client_usrname, MAX_USR_LEN + 1);
 		is_usr_freed = 0;
                 printf("....................................................................................\n");
                 printf("...............................USR_REGISTRATION_LOGIN...............................\n");
-		if (!managing_usr_registration_login(acc_sock, &client_usrname))
+		if (!managing_usr_registration_login(acc_sock, &client_usrname, sem_log))
 			break;	
 
 		is_usr_freed = 1;

@@ -60,7 +60,7 @@ int read_string(int sock, char **string, int line){
 
 	if (read_int(sock, &len, 58))
 		return 1;
-	printf("len (read_string): %d\n", len);	
+	//printf("len (read_string): %d\n", len);	
 	if ((*string = (char*) malloc(sizeof(char) * (len + 1))) == NULL)
 		error(62);
 	bzero(*string, len+1);
