@@ -60,7 +60,7 @@ int read_string(int sock, char **string, int line){
 
 	if (read_int(sock, &len, 58))
 		return 1;
-//	printf("len: %d\n", len);	
+	printf("len (read_string): %d\n", len);	
 	if ((*string = (char*) malloc(sizeof(char) * (len + 1))) == NULL)
 		error(62);
 	bzero(*string, len+1);
@@ -117,8 +117,10 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 	int i = 0;
 	char *one_string, *token;
 	
-	if (read_string(sock, &one_string, 88))
+	if (read_string(sock, &one_string, 88)){
+		printf("inserito terminatore\n");
 		return 0;
+	}
 
 //	printf("onestring %s.\n", one_string);
 	/*PARSING*/
@@ -170,19 +172,51 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 }
 
 void send_mex(int sock, message *mex, int invia_is_new_and_position){
-	int max_len = MAX_USR_LEN + MAX_USR_LEN + MAX_OBJ_LEN + MAX_MESS_LEN + 6;
-	char one_string[max_len];
+	int another_esc = 0, len;
 
-	bzero(one_string, max_len);
-//	stampa_messaggio(mex);
-	/*	sender, object, text, destination, is_new, position*/
-	if (invia_is_new_and_position)
-		sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d\037%d", mex -> usr_destination, mex -> usr_sender, mex -> object, mex -> text, mex -> is_new, mex -> position, mex -> is_sender_deleted);
-	
+	len = strlen(mex -> usr_destination) + strlen(mex -> usr_sender) + strlen(mex -> object) + strlen(mex -> text); //lunghezza delle stringhe
+
+	if (invia_is_new_and_position){
+		/* devo aggiungere la lunghezza del numero "mex -> position": il suo numero di cifre */
+		char *str_num = (char*) malloc(sizeof(char*) * MAX_CIFRE);
+		if (str_num == NULL)
+			error(184);
+		bzero(str_num, MAX_CIFRE);
+		sprintf(str_num, "%d", mex -> position);
+		len += strlen(str_num); //aggiungo il numero di cifre di mex->position
+		free(str_num);
+
+		len += 2; //1 per is_new, 1 per is_sender_deleted
+		len += 6; //caratteri di escape
+	}
 	else
-		sprintf(one_string, "%s\037%s\037%s\037%s", mex -> usr_destination, mex -> usr_sender, mex -> object, mex -> text);
+		len += 3; //caratteri di escape
 	
-	//printf("%s\n", one_string);	
-	//printf("cmp = %d\n", strcmp(one_string, "a\037RE: a\037asd\037a"));
+
+	if (len == MAX_NUM_MEX + 1){
+		audit;
+		len++; //inserisco un altro carattere di escape.
+		another_esc = 1;
+	}
+
+	char one_string[len + 1];//terminatore di stringa
+	bzero(one_string, len + 1);
+
+	if (invia_is_new_and_position){ //server to client
+		if (!another_esc)
+			sprintf(one_string, "%s\037%s\037%s\037%s\037%d\037%d\037%d", mex -> usr_destination, mex -> usr_sender, mex -> object, mex -> text, mex -> is_new, mex -> position, mex -> is_sender_deleted);
+		else{
+			audit;
+			sprintf(one_string, "%s\037\037%s\037%s\037%s\037%d\037%d\037%d", mex -> usr_destination, mex -> usr_sender, mex -> object, mex -> text, mex -> is_new, mex -> position, mex -> is_sender_deleted);
+		}
+	}
+	
+	else{ //client to server
+		if (!another_esc)
+			sprintf(one_string, "%s\037%s\037%s\037%s", mex -> usr_destination, mex -> usr_sender, mex -> object, mex -> text);
+		else
+			sprintf(one_string, "%s\037\037%s\037%s\037%s", mex -> usr_destination, mex -> usr_sender, mex -> object, mex -> text);
+	}
+	
 	write_string(sock, one_string, 1433);
 }

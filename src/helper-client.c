@@ -169,16 +169,20 @@ get_code:
 	        printf(" ______ ________ ________ _____Operazioni Disponibili_____ ________ ________ ______ _\n");
 	  	printf("|                                                                                    |\n");
 
-                	/*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
-	                if (strlen(mex -> object) <= MAX_OBJ_LEN - 4 && !(mex -> is_sender_deleted))
-		        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
-			else{
-	        		printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
-				can_i_wb = 0;
-				minimal_code = 1;
-			}
+               	/*CHECKING IF USR CAN WRITE BACK TO LAST READ MESS */
 
-	        	printf("|   OPERAZIONE 1 : Cancellare il messaggio visualizzato				     |\n");
+/*		printf("(strlen(mex -> object)) <= (MAX_OBJ_LEN - 4)) == condizione\n");
+		printf("%ld <= %d == %d\n", strlen(mex -> object), (MAX_OBJ_LEN - 4), (strlen(mex -> object)) <= (MAX_OBJ_LEN - 4));*/
+
+                if ( ((int)(strlen(mex -> object)) <= (MAX_OBJ_LEN - 4)) && !(mex -> is_sender_deleted))
+	        	printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato				     |\n");
+		else{
+        		printf("|   OPERAZIONE 0 : Rispondere al messaggio visualizzato (NON DISPONIBILE)	     |\n");
+			can_i_wb = 0;
+			minimal_code = 1;
+		}
+
+        	printf("|   OPERAZIONE 1 : Cancellare il messaggio visualizzato				     |\n");
 		if (flag != 2){
 			printf("|   OPERAZIONE 2 : Cercare un altro messaggio					     |\n");
         		printf("|   OPERAZIONE 3 : Interrompere la ricerca e tornare al menu principale		     |\n");

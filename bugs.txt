@@ -233,3 +233,29 @@ funzionalità di rispondere e eliminare un messaggio letto col il suo codice.
 			leave = 1;
 		che serviva a bloccare il write del nuovo valore di found alla fine del for
 
+
+
+- se aumentassi la lunghezza del campo text, potrei arrivare ad avere configurazioni in cui 
+il messaggio che invio con la funzione send_mex() abbia una lunghezza pari a 
+MAX_NUM_MEX + 1. A quel punto, leggendo la lunghezza della stringa, server o client schianta
+perchè interpreterebbe quella lunghezza come a un ctrl + c, per cui read string (su cui si
+basa get mex) ritornerebbe senza leggere la stringa, e tutto andrebbe a puttane
+	---> fixed controllando la lunghezza della stringa. se il risultato di strlen() è
+		pari a MAX_USR_LEN + 1, allora alloco 1 altro carattere in one_string,
+		e sarà un altro carattere di escape, uno vicino all'altro:
+		infatti la funzione strtok(), quando trova 2 delimiter uno vicino 
+		l'altro, li considera come un unico delimiter
+
+
+- settando:
+	MAX_OBJ_LEN = 1;
+ printf("(strlen(mex -> object)) <= (MAX_OBJ_LEN - 4)) == condizione\n");
+ printf("%ld <= %d == %d\n", strlen(mex -> object), (MAX_OBJ_LEN - 4), (strlen(mex -> object)) <= (MAX_OBJ_LEN - 4));
+
+ottenevo:
+1 <= -3 == 1
+quindi la condizione di write back restituiva 1, anche se doveva essere 0.
+	----> fixed modificando il primo membro della disequazione a :
+		(int) (strlen(mex -> object))
+		cast espicito a intero.
+

@@ -56,11 +56,6 @@ void handler_sigint(){
 	exit(EXIT_SUCCESS);
 }
 
-void handler_sigpipe(){
-	printf("\ncatched SIGPIPE\njust exiting\n");
-	exit(EXIT_SUCCESS);
-}
-
 
 int main(int argc, char *argv[]){
 	//porta come 1 parametro. aggiustare parsing

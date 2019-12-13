@@ -1,11 +1,10 @@
-#define MAX_NUM_MEX 1024 //memorizzerò al massimo 1024 messaggi
-#define MAX_NUM_USERS 100	//max numero di utenti
-#define LISTENQ        (1024)   /*  Backlog for listen()   */
-#define MAX_USR_LEN 20
-#define MAX_PW_LEN 10
-#define MAX_OBJ_LEN 20
-#define MAX_MESS_LEN 100
-#define MAX_CIFRE 5
+#define LISTENQ        	1024   /*  Backlog for listen()   */
+#define MAX_USR_LEN 	20
+#define MAX_PW_LEN 	10
+#define MAX_OBJ_LEN 	20
+#define MAX_MESS_LEN 	100
+#define MAX_NUM_MEX 	1024 //memorizzerò al massimo 1024 messaggi
+#define MAX_CIFRE 	5
 
 typedef struct MESSAGE{
         char *usr_destination;
