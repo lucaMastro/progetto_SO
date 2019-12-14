@@ -298,7 +298,7 @@ retry:
 		
 		not_accepted_code(scan_ret, &retry, mode + 2);
 		if (retry < 0 || retry > mode + 1){
-			printf("operazione non valida. premi un tasto per riprovare\n");
+			printf("Operazione non valida. Premi un tasto per riprovare: ");
 			fflush(stdin);
 			goto retry;
 		}
@@ -331,7 +331,7 @@ void invia_messaggio(int sock_ds, char *sender){
 	mex -> usr_sender = sender;
 get_dest:
         //GETTING DATA AND THEIR LEN
-        printf("username (max %d caratteri):\t", MAX_USR_LEN);
+        printf("Username (max %d caratteri):\t", MAX_USR_LEN);
         if (scanf("%ms", &(mex -> usr_destination)) == -1 && errno != EINTR)
                 error(470);
 
@@ -340,7 +340,7 @@ get_dest:
 
 	//CHECK SULLA LUNGHEZZA
 	if (strlen(mex -> usr_destination) > MAX_USR_LEN){
-		printf("username destinatario troppo lungo.\n");
+		printf("Username destinatario troppo lungo.\n");
 		retry = operazioni_disponibili_invio(0);	
 		write_int(sock_ds, retry, 221);
 		
@@ -360,7 +360,7 @@ get_dest:
         read_int(sock_ds, &ret, 539);
 
         if (!ret){
-                printf("destinatario non esiste.\n\n"); 
+                printf("Destinatario non esiste.\n\n"); 
 		free(mex -> usr_destination);
 
 		retry = operazioni_disponibili_invio(0);
@@ -376,14 +376,14 @@ get_dest:
 
 get_obj:
         printf("\n");
-	printf("object (max %d caratteri):\t", MAX_OBJ_LEN);
+	printf("Object (max %d caratteri):\t", MAX_OBJ_LEN);
         if (scanf(" %m[^\n]", &(mex -> object)) == -1 && errno != EINTR)
                 error(485);
 
         fflush(stdin);
 
         if (strlen(mex -> object) > MAX_OBJ_LEN){
-                printf("oggetto inserito troppo lungo.\n");	
+                printf("Oggetto inserito troppo lungo.\n");	
 		free(mex -> object);
 
 		retry = operazioni_disponibili_invio(1);
@@ -407,13 +407,13 @@ get_obj:
 
 get_mess:
         printf("\n");
-	printf("text: (max %d caratteri):\t", MAX_MESS_LEN);
+	printf("Text: (max %d caratteri):\t", MAX_MESS_LEN);
         if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
                 error(497);
         fflush(stdin);
 
         if (strlen(mex -> text) > MAX_MESS_LEN){
-                printf("messaggio inserito troppo lungo.\n");
+                printf("Messaggio inserito troppo lungo.\n");
 		retry = operazioni_disponibili_invio(2);
 		write_int(sock_ds, retry, 221);
 		
@@ -460,7 +460,7 @@ int usr_menu(int sock_ds, char *my_usrname){
 	signal(SIGINT, handler);
 
 select_operation:
-        printf("\n\nlogin effettuato come: %s\n\n", my_usrname);
+        printf("\n\nLogin effettuato come: %s.\n\n", my_usrname);
 
         if (check_upd){
                 //Reading if there are new mex
@@ -469,9 +469,9 @@ select_operation:
         }
 
         if (new_mex_avaiable)
-                printf("esistono messaggi non letti\n\n");
+                printf("Esistono messaggi non letti.\n\n");
         else
-                printf("non esistono messaggi non letti\n\n");
+                printf("Non esistono messaggi non letti.\n\n");
 
         printf(".....................................................................................\n");
         printf(".....................................................................................\n");
@@ -494,7 +494,7 @@ select_operation:
         printf("|   OPERAZIONE 9 : Cambia password                                                   |\n");
         printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
 
-        printf("quale operazione vuoi svolgere?\n");
+	printf("Quale operazione vuoi svolgere?\n");
 
         if ((scan_ret = scanf("%d", &operation)) == -1 && errno != EINTR)
                 error(995);
@@ -503,7 +503,7 @@ select_operation:
         fflush(stdin);
 
         if (operation > 9 || operation < 0){
-                printf("Operazione non valida.\nPremi un tasto per riprovare:");
+                printf("Operazione non valida.\nPremi un tasto per riprovare: ");
                 fflush(stdin);
                 printf("\e[1;1H\e[2J");
                 goto select_operation;
@@ -512,10 +512,10 @@ select_operation:
         //invio il segnale per preparare il server alla gestione dell'operazione:
         write_int(sock_ds, operation, 1162);
 
-        printf("operazione accettata.\n\n");
+        printf("Operazione accettata.\n\n");
         switch (operation){
                 case 0:
-                        printf("tornerai alla schermata di login fra 3 secondi. arrivederci :)\n");
+                        printf("Tornerai alla schermata di login fra 3 secondi. Arrivederci :)\n");
                         //sleep(3);
                         return 0;
                         break;
@@ -599,7 +599,7 @@ portal:
 	not_accepted_code(scan_ret, &operation, 3);
 
         if (operation < 0 || operation > 2){
-                printf("operazione non valida. premi un tasto per riprovare: ");
+                printf("Operazione non valida. Premi un tasto per riprovare: ");
                 fflush(stdin);
                 goto portal;
         }
@@ -631,7 +631,7 @@ portal:
 
 get_usr:
         retry = 0;
-        printf("inserisci username (max %d caratteri):\n", MAX_USR_LEN);
+        printf("Inserisci username (max %d caratteri):\n", MAX_USR_LEN);
         if (scanf("%s", *usr) == -1 && errno != EINTR)
                 error(756);
 
@@ -646,7 +646,7 @@ get_usr:
                 printf("|   1. Inserire un nuovo username                                                    |\n");
                 printf("|   2. Annullare e tornare al menu iniziale                                          |\n");
                 printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-                printf("quale operazione vuoi svolgere?\n");
+                printf("Quale operazione vuoi svolgere?\n");
 get_op:
                 if ((scan_ret = scanf("%d", &retry)) == -1 && errno != EINTR)
                         error(732);
@@ -664,7 +664,7 @@ get_op:
                                 goto portal;
                                 break;
                         default:
-                                printf("operazione non valida. premi un tasto per riprovare: ");
+                                printf("Operazione non valida. Premi un tasto per riprovare: ");
                                 fflush(stdin);
                                 goto get_op;
                                 break;
@@ -698,7 +698,7 @@ get_pw:
                 printf("|   1. Inserire una nuova password                                                   |\n");
                 printf("|   2. Annullare e tornare al menu iniziale                                          |\n");
                 printf("|____ ________ ________ ________ ________ ________ ________ ________ ________ _____ _|\n\n");
-                printf("quale operazione vuoi svolgere?\n");
+                printf("Quale operazione vuoi svolgere?\n");
 get_op1:
                 if ((scan_ret = scanf("%d", &retry)) == -1 && errno != EINTR)
                         error(732);
@@ -714,7 +714,7 @@ get_op1:
                                 write_int(sock_ds, retry, 507);
                                 goto portal;
                         default:
-                                printf("operazione non valida. premi un tasto per riprovare: ");
+                                printf("Operazione non valida. Premi un tasto per riprovare: ");
                                 fflush(stdin);
                                 goto get_op1;
                 }
@@ -729,7 +729,7 @@ get_op1:
         switch (ret){
                 case 0: //it was allright
                         if (operation == 1){ //it was a registration:
-                                printf("registrazione avvenuta.\npremi un tasto per continuare: ");
+                                printf("Registrazione avvenuta.\nPremi INVIO per continuare: ");
                                 fflush(stdin);
                                 goto portal;
                                 break;
@@ -739,24 +739,24 @@ get_op1:
 
                 case 1:
                         //file già esistente:
-                        printf("username già presente. per favore riprova.\npremi INVIO per continuare.\n");
+                        printf("Username già presente. Per favore riprova.\nPremi INVIO per continuare: ");
 			fflush(stdin);
                         goto portal;
                         break;
                 case 2:
                         //uncorrect pw or username in login
-                        printf("username o password errati. per favore riprova (premi INVIO per continuare).");
+                        printf("Username o password errati. Per favore riprova.\nPremi INVIO per continuare: ");
 			fflush(stdin);
                         goto portal;
                         break;
                 case 3:
                         //usr already logged
-                        printf("username già loggato. per favore riprova (premi INVIO per continuare).\n");
+                        printf("Username già loggato. Per favore riprova\nPremi INVIO per continuare: ");
 			fflush(stdin);
                         goto portal;
                         break;
                 case 4:
-                        printf("password o usrname troppo lunghi, per favore riprova.\npremi INVIO per continuare\n");
+                        printf("Username o password troppo lunghi. Per favore riprova.\nPremi INVIO per continuare: ");
                         fflush(stdin);
                         goto portal;
                         break;
@@ -772,7 +772,7 @@ get_op1:
 void close_client(int sock_ds){
 
         close(sock_ds);
-        printf("l'applicazione si chiuderà in 3 secondi. arrivederci :)\n");
+        printf("L'applicazione si chiuderà in 3 secondi. Arrivederci :)\n");
         /*if (!sleep(3)){
                 printf("\e[1;1H\e[2J");
         }*/
@@ -824,7 +824,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 		else if (code < 0){
 			code = -1; //SET THE CODE = -1: I FIX THE BUG IF USERS INSERT -999999
                 	write_int(sock_ds, code, 328);
-                        printf("operazione annullata con successo\n");
+                        printf("Operazione annullata con successo\n");
                         goto exit_lab;
                 }
 		
@@ -835,8 +835,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 	/*READ IF THE CODE IS ACCEPTED*/
         read_int(sock_ds, &is_mine, 332);
         if (is_mine == 1){ //&& code <= MAX_NUM_MEX){ CHECK GIÀ FATTO
-                //printf("codice accettato. attendi conferma eliminazione\n");
-		printf("codice accettato.\n");
+		printf("Codice accettato.\n");
 		
 		if (mode < 0){
 	     		if ((mex = (message*) malloc(sizeof(message))) == NULL)
@@ -865,7 +864,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 			fflush(stdin);
 			not_accepted_code(scan_ret, &op, 2);
 			if (op < 0 || op > 1){
-				printf("codice non valido. riprovare\n");
+				printf("Codice non valido. Riprovare\n");
 				goto read_conf;
 			}
 			write_int(sock_ds, op, 854);
@@ -873,14 +872,14 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
 				goto exit_lab;
 		}
 		
-		printf("attendi conferma eliminazione...\n");
+		printf("Attendi conferma eliminazione...\n");
                 /*READ IF ELIMINATION WAS OK*/
                 read_int(sock_ds, &ret, 338);
 
                 if (ret == 1)
-                        printf("messaggio eliminato correttamente\n\n");
+                        printf("Messaggio eliminato correttamente\n\n");
                 else{
-                        printf("errore nell'eliminazione del messaggio. termino.\n\n");
+                        printf("Errore nell'eliminazione del messaggio. Termino.\n\n");
                         exit(EXIT_FAILURE);
                 }
         }
@@ -904,7 +903,7 @@ usr_will:
 
                 fflush(stdin);
                 if (again < 0 || again > 1){
-                        printf("codice non valido. riprova.\n\n");
+                        printf("Codice non valido. Riprova.\n\n");
                         goto usr_will;
                 }
                 write_int(sock_ds, again, 361);
@@ -932,7 +931,7 @@ retry:
 		not_accepted_code(scan_ret, &retry, 2);
 
 		if (retry < 0 || retry > 1){
-			printf("operazione non valida. premi un tasto per riprovare\n");
+			printf("Operazione non valida. Premi un tasto per riprovare: ");
 			fflush(stdin);
 			goto retry;
 		}
@@ -949,7 +948,7 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
         //reading response if destination exists:
         read_int(sock_ds, &ret, 1299);
         if (!ret){
-                printf("destinatario non più esistente.");
+                printf("Destinatario non più esistente.\n");
                 return 0;
         }
 
@@ -967,13 +966,13 @@ int write_back(int sock_ds, char *object, char *my_usr, char *usr_dest ){
 
 get_mex:
         /*GETTING THE TEXT FROM USR*/
-        printf("inserisci il messaggio (max %d caratteri):\n", MAX_MESS_LEN);
+        printf("Inserisci il messaggio (max %d caratteri):\n", MAX_MESS_LEN);
         if (scanf(" %m[^\n]", &(mex -> text)) == -1 && errno != EINTR)
                 error(1235);
         fflush(stdin);
 
 	if (strlen(mex -> text) > MAX_MESS_LEN){
-                printf("messaggio inserito troppo lungo.\n");
+                printf("Messaggio inserito troppo lungo.\n");
 		retry = operazioni_disponibili_wb();	
 		write_int(sock_ds, retry, 221);
 
@@ -990,12 +989,12 @@ get_mex:
 	/*READING IF THE MEX CAN BE STORED*/
         read_int(sock_ds, &ret, 567);
 	if (ret < 0)	
-		printf("operazione temporaneamente fuori servizio. riprovare più tardi\n\n");
+		printf("Operazione temporaneamente fuori servizio. Riprovare più tardi.\n\n");
 
 	else{
 	        //SENDING DATA
 		send_mex(sock_ds, mex, 0);
-	        printf("\n\ninvio del messaggio avvenuto con successo.\n");
+	        printf("\n\nInvio del messaggio avvenuto con successo.\n");
 	}
 
 	free(mex -> text);
@@ -1009,12 +1008,12 @@ int delete_me(int sock_ds){
 
 	int ok;
 
-	printf("attendo conferma eliminazione.\n");
+	printf("Attendo conferma eliminazione.\n");
         read_int(sock_ds, &ok, 1347);
         if (ok == 1)
-                printf("account eliminato con successo. ");
+                printf("Account eliminato con successo. ");
         else
-                printf("impossibile eliminare account.\n");
+                printf("Impossibile eliminare account.\n");
         return ok;
 
 }
@@ -1023,7 +1022,7 @@ void cambia_pass(int sock_ds){
         int ret;
         char *new_pw;
 	
-        printf("inserisci la nuova password:\n");
+        printf("Inserisci la nuova password:\n");
 #ifndef CRYPT
         if (scanf("%ms", &new_pw) == -1 && errno != EINTR)
                 error(1423);
@@ -1039,7 +1038,7 @@ void cambia_pass(int sock_ds){
         read_int(sock_ds, &ret, 1519);
 
         if (ret)
-                printf("password cambiata con successo.\n");
+                printf("Password cambiata con successo.\n");
         free(new_pw);
 }
 

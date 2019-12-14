@@ -4,7 +4,7 @@
 #define MAX_OBJ_LEN 	20
 #define MAX_MESS_LEN 	100
 #define MAX_NUM_MEX 	1024 //memorizzerò al massimo 1024 messaggi
-#define MAX_CIFRE 	5
+#define MAX_CIFRE 	5 //per la corretta esecuzione, tenerlo uguale al numero di cifre di MAX_NUM_MEX + 1
 
 typedef struct MESSAGE{
         char *usr_destination;
