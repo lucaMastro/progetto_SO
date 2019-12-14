@@ -28,13 +28,12 @@ void *thread_func(void *sock_ds);
 message **message_list;
 int position = 0; //puntatore alla posizione minima in cui salvare un messaggio
 int fileid, last = 0; //puntatore alla prossima posizione in cui memorizzare un messaggio.
-int sem_write; //write sem's: synchronizing write of mess, deleting
-int sem_log; 
-int server[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = 0}; //bitmask for messages of server. it must be shared
+int sem_write; //semaforo per la gestione di scritture, eliminazioni e "modifiche" del messaggio
+int sem_log;  //semaforo per la gestione dei login
+int server[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = 0}; //bitmask per la posizione dei messaggi 
 
-//__thread int acc_sock;
-__thread int my_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
-__thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask
+__thread int my_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask per i miei messaggi
+__thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //bitmask per i miei nuovi messaggi
 
 /***********************************************************************************************************/
 
@@ -60,12 +59,10 @@ void handler_sigint(){
 
 int main(int argc, char *argv[]){
 	//porta come 1 parametro. aggiustare parsing
-	int sock_ds, *acc_sock, ret, on = 1, i;
-	char *port, *client_usrname;
+	int sock_ds, *acc_sock, ret, on = 1;
+	char *port;
 	struct sockaddr_in server_addr, client_addr;
-	int server_len, client_len, port_num, operation;
-	ssize_t read_ch;
-	struct sembuf sops;
+	int server_len, client_len, port_num;
 	pthread_t tid;
 
 	printf("\e[1;1H\e[2J");	
@@ -146,7 +143,6 @@ int main(int argc, char *argv[]){
                 close(fileid);
 	
 
-	sops.sem_flg = 0;
 	while(1){
 		
 		acc_sock = (int *) malloc(sizeof(int));
@@ -160,9 +156,7 @@ int main(int argc, char *argv[]){
 			exit(EXIT_FAILURE);
 		} 
 	
-//                printf("\n");
 		printf("\nconnessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
-	//	printf("\nconnessione avvenuta\n");
 	
 		if (pthread_create(&tid, NULL, thread_func, (void*) acc_sock)){
 			perror("impossibile creare thread");
@@ -207,28 +201,18 @@ void *thread_func(void *sock_ds){
 			
 	char *client_usrname;
 	struct sembuf sops;
-//	struct sembuf sops_log;
-	int acc_sock, is_usr_freed;
-
+	int acc_sock;
 
 	acc_sock = *((int *)sock_ds);	
 
-	
-
 	while(1){	
-		//bzero(client_usrname, MAX_USR_LEN + 1);
-		is_usr_freed = 0;
                 printf("....................................................................................\n");
                 printf("...............................USR_REGISTRATION_LOGIN...............................\n");
 		if (!managing_usr_registration_login(acc_sock, &client_usrname, sem_log))
 			break;	
 
-		is_usr_freed = 1;
 		if (managing_usr_menu(acc_sock, message_list, &position, &last, client_usrname, my_messages, my_new_messages, server, sem_write))
 			break;
-//                printf("....................................................................................\n");
 	}
-//	printf("fine\n");
-//	pthread_exit((void*) 0);
 	free(sock_ds);
 }

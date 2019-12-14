@@ -137,13 +137,13 @@ get_code:
 			not_accepted_code(scan_ret, &code, MAX_NUM_MEX + 2);
 
 			if (code < 0){
-				printf("operazione annullata con successo.\n");
+				printf("Operazione annullata con successo.\n");
 				code = -1;
 				write_int(sock_ds, code, 72);
 				goto exit_lab;	
 			}
 			else if (code > MAX_NUM_MEX){
-				printf("codice non valido. premi un tasto e riprova: ");
+				printf("Codice non valido. Premi un tasto e riprova: ");
 				fflush(stdin);
 				goto get_code;
 			}
@@ -152,11 +152,11 @@ get_code:
 				//read if users has a mex in `code` position
 				read_int(sock_ds, &found, 124);
 				if (found){
-					printf("codice accettato.\n");
+					printf("Codice accettato.\n");
 					get_mex(sock_ds, mex, 1);
 				}
 				else{
-					printf("non hai messaggi associati a quel codice. premi un tasto per terminare: ");
+					printf("Non hai messaggi associati a quel codice. premi un tasto per terminare: ");
 					fflush(stdin);
 					goto exit_lab;
 				}
@@ -204,7 +204,7 @@ usr_will:
 			not_accepted_code(scan_ret, &op, 4);
 
 			if (op < minimal_code || op > maximal_code){
-				printf("codice non valido. riprovare\n");
+				printf("Codice non valido. Riprovare\n\n");
 				goto usr_will;
 			}
 
@@ -223,14 +223,14 @@ usr_will:
 					if (can_i_wb)				
                         	        	write_back(sock_ds, mex -> object, my_usrname, mex -> usr_sender);
 					if (flag != 2){
-						printf("premi un tasto per continuare la ricerca:");
+						printf("Premi un tasto per continuare la ricerca:");
 						fflush(stdin);
 					}
 					break;
 				case 1:	
 		                        cancella_messaggio(sock_ds, mex -> position);
 					if (flag != 2){
-						printf("premi un tasto per continuare la ricerca: ");
+						printf("Premi un tasto per continuare la ricerca: ");
 						fflush(stdin);
 					}
 					break;
@@ -255,17 +255,17 @@ usr_will:
 	/* GESTIONE DEL CORRETTO MESSAGGIO DA STAMPARE IN BASE AI VARI CASI */
         if (!leave){ //eseguito solo con flag == 0 o flag == 1.
 		if (isfirst && !flag)
-        	        printf("non ci sono messaggi per te\n");
+        	        printf("Non ci sono messaggi per te\n");
 	        else if (isfirst && flag)
-        	        printf("non ci sono nuovi messaggi per te\n");
+        	        printf("Non ci sono nuovi messaggi per te\n");
 	        else{//sono entrato nel while
         	        if (flag){//solo messaggi new
                 	        if (again)
-                        	        printf("\nnon ci sono altri nuovi mess.\n");
+                        	        printf("\nNon ci sono altri nuovi mess.\n");
 	                }
         	        else{
                 	        if (again)
-                        	        printf("\nnon ci sono altri messaggi\n");
+                        	        printf("\nNon ci sono altri messaggi\n");
 	                }
         	}
 	}
@@ -540,7 +540,7 @@ select_operation:
                         break;
                 case 6:
                         read_int(sock_ds, &new_mex_avaiable, 1147);
-                        printf("aggiornamento avvenuto con successo.\n");
+                        printf("Aggiornamento avvenuto con successo.\n");
                         break;
                 case 7:
                         free(my_usrname);
@@ -555,7 +555,7 @@ select_operation:
                 default:
                         break;
         }
-        printf("premi INVIO per continuare: ");
+        printf("\nPremi INVIO per continuare: ");
         fflush(stdin);
         printf("\e[1;1H\e[2J");
 
@@ -878,7 +878,7 @@ int cancella_messaggio(int sock_ds, int mode){//mode < 0 quando è chiamata sepa
                 read_int(sock_ds, &ret, 338);
 
                 if (ret == 1)
-                        printf("messaggio eliminato correttamente\n");
+                        printf("messaggio eliminato correttamente\n\n");
                 else{
                         printf("errore nell'eliminazione del messaggio. termino.\n\n");
                         exit(EXIT_FAILURE);

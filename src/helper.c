@@ -28,31 +28,16 @@ void stampa_messaggio(message *mess){
 	printf("to:\n\t%s\n", mess -> usr_destination);
 	printf("object:\n\t%s\n", mess -> object);
 	printf("text:\n\t%s\n\n", mess -> text);
-
-/*	if (mess -> is_sender_deleted)
-		c = 'y';
-	else
-		c = 'n';
-	
-	printf("is sender deleted:\n\t%c\n\n", c);*/
 	printf(".....................................................................................\n");
 
 }
 
 void write_string(int sock, char *string, int line){
 	int len = strlen(string);
-//	printf("len = %d\n", len);
-
-	/*if (write(sock, &len, sizeof(len)) == -1)
-		error(1172);*/
-//	printf("len. ");
 	write_int(sock, len, line);
-	//audit;
-//	printf("***WRITE STRING: %s.\n\n", string);
 
 	if (write(sock, string, len) == -1)
 		error(line);
-//	printf("scrivo: %s.\n", string);
 }
 
 int read_string(int sock, char **string, int line){
@@ -60,14 +45,13 @@ int read_string(int sock, char **string, int line){
 
 	if (read_int(sock, &len, 58))
 		return 1;
-	//printf("len (read_string): %d\n", len);	
+
 	if ((*string = (char*) malloc(sizeof(char) * (len + 1))) == NULL)
 		error(62);
 	bzero(*string, len+1);
 	
 	if ( (read(sock, *string, len)) == -1)
 		error(line);
-//	printf("letto: %s.\n", *string);
 
 	return 0;
 }
@@ -82,11 +66,9 @@ void write_int(int sock, int num, int line){;
 	bzero(str_num, MAX_CIFRE + 1);
 
 	sprintf(str_num, "%d", num);
-//	printf("\n***WRITE INT: string_v: %s. int_v: %d, len = %d\n", str_num, num, strlen(str_num));
 
 	if (write(sock, str_num, MAX_CIFRE) == -1)
 		error(line);
-//	printf("scrivo: %s\n", str_num);
 	free(str_num);
 }
 
@@ -102,9 +84,7 @@ int read_int(int sock, int *num, int line){
 
 	if (read(sock, str_num, MAX_CIFRE) == -1)
 		error(line);
-//	printf("letto: %s.\n", str_num);	
 	*num = atoi(str_num);
-	//printf("\n***READ INT: string_v: %s. int_v: %d\n", str_num, *num);
 	free(str_num);
 	if (*num == MAX_NUM_MEX + 1)
 		return 1;
@@ -122,16 +102,12 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 		return 0;
 	}
 
-//	printf("onestring %s.\n", one_string);
 	/*PARSING*/
 	token = strtok(one_string, "\037");
-//	printf("%ld\n", strlen(one_string));
 	
 	if ((mex -> usr_destination = (char*) calloc(MAX_USR_LEN + 1, sizeof(char))) == NULL)	
 		error(30);
-	//audit;
 	strcpy(mex -> usr_destination, token);
-	//audit;
 	while ((token = strtok(NULL, "\037")) != NULL){
 		switch(i){
 			case 0:
@@ -163,8 +139,6 @@ int get_mex(int sock, message *mex, int alloca_position){ //store the sent mex i
 			default:
 				break;
 		}
-	//	printf("%s\n", token);
-	//	printf("usr_destination: %s\n\n", mex -> usr_destination);
 		i++;
 	}
 	free(one_string);
@@ -177,8 +151,9 @@ void send_mex(int sock, message *mex, int invia_is_new_and_position){
 	len = strlen(mex -> usr_destination) + strlen(mex -> usr_sender) + strlen(mex -> object) + strlen(mex -> text); //lunghezza delle stringhe
 
 	if (invia_is_new_and_position){
-		/* devo aggiungere la lunghezza del numero "mex -> position": il suo numero di cifre */
-		char *str_num = (char*) malloc(sizeof(char*) * MAX_CIFRE);
+		/* devo aggiungere la lunghezza del numero "mex -> position"
+		 * per ora ho MAX_CIFRE = 5, e non devo gestire i numeri negativi. contiene già il terminatore di stringa, perchè il max position valido è 1024. */
+		char *str_num = (char*) malloc(sizeof(char*) * MAX_CIFRE);  
 		if (str_num == NULL)
 			error(184);
 		bzero(str_num, MAX_CIFRE);

@@ -20,33 +20,17 @@ int sock_ds;
 
 
 void handler_sigpipe(){
-	printf("\ncatched SIGPIPE\njust exiting\n");
-//	while(getchar() != '\n'){};
-//	log_out(my_usrname); //inviare segnale di log-out al server
+	printf("\ncatched SIGPIPE\nJust exiting\n");
 	exit(EXIT_SUCCESS);
 }
-/*
-void handler_sigint(){
-	int operation = MAX_NUM_MEX + 1;
-	char *op;
-
-//	fflush(stdin);
-	printf("\nconnessione interrotta.\n");
-//	log_out(my_usrname);
-	sprintf(op, "%d", operation);
-	write_string(sock_ds, op, 37);
-	exit(EXIT_SUCCESS);
-}*/
 
 
 int main(int argc, char *argv[]){
-	/*argv[1] = server_addr
-	 * argv[2] = port*/
 
 	int ret, sock_ds;
         struct sockaddr_in server_addr;
-        int server_len, operation;
- 	char *port, *addr; //, *my_usrname;
+        int server_len;
+ 	char *port, *addr; 
 	struct hostent *he;
 
 	signal(SIGPIPE, handler_sigpipe);
@@ -95,7 +79,7 @@ int main(int argc, char *argv[]){
         }
 	
 	printf("\e[1;1H\e[2J");	
-	printf("connessione al server riuscita.\npremi INVIO per continuare.\n");
+	printf("Connessione al server riuscita.\nPremi INVIO per continuare.\n");
 	fflush(stdin);
 
 reg_log:
@@ -107,7 +91,6 @@ reg_log:
 		bzero(my_usrname, MAX_USR_LEN);
 		goto reg_log;
 	}
-	//free(my_usrname);
 }
 
 

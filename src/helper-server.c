@@ -709,7 +709,6 @@ check_operation:
 				printf("sleeping\n");
 				sleep(10);
 			}*/
-
                         if((atoi(&is_log)) == 1){
                                 printf("usr already logged\n");
 				//incremento semaforo
