@@ -37,7 +37,30 @@ __thread int my_new_messages[MAX_NUM_MEX] = { [0 ... MAX_NUM_MEX - 1] = -1}; //b
 
 /***********************************************************************************************************/
 
-
+void slogga_tutti(){
+	char c, *usr;
+	int i, n = 1;
+	while (n != 0){
+		usr = malloc(sizeof(char) * (MAX_USR_LEN + 1));
+		if (usr == NULL)
+			error(149);
+		bzero(usr, MAX_USR_LEN + 1);
+		
+		for (i = 0; i < MAX_USR_LEN; i++){
+			n = read(fileid, &c, 1);
+			if (n == -1)
+				error(148);
+			if (c == '\n' || n == 0)
+				break;
+			else
+				usr[i] = c;
+		}
+		if (n != 0)
+			log_out(usr);
+		else
+			free(usr);
+	}
+}
 
 void handler_sigint(){
 	int i, fileid;
@@ -139,9 +162,11 @@ int main(int argc, char *argv[]){
         fileid = open(".db/list.txt", O_CREAT, 0666);
         if (fileid == -1)
                 error(142);
-        else
+        else{
+		slogga_tutti();
                 close(fileid);
-	
+	}
+		
 
 	while(1){
 		

@@ -1,10 +1,5 @@
 
 
-3. quando il server viene messo in piedi, sloggare tutti gli utenti. questo perchè:
-	+se il server crasha, il client cattura il SIGPIPE
-	+se il server è down, il client non può collegarsi
-	+per funzionare di nuovo, il server deve essere lanciato. la prima cosa che potrebbe fare è appunto settare il log bit a 0 per ogni utente
-
 
 aaaaaaaaaaaaaaaaaaaa
 
@@ -43,3 +38,12 @@ realizzazione:
 
 
 - inserire la stampa del messaggio da eliminare quando viene selezionata l'operazione 5, con richiesta di conferma
+
+
+
+
+- quando il server viene messo in piedi, sloggare tutti gli utenti. questo perchè:
+	+se il server crasha, il client cattura il SIGPIPE
+	+se il server è down, il client non può collegarsi
+	+per funzionare di nuovo, il server deve essere lanciato. la prima cosa che potrebbe fare è appunto settare il log bit a 0 per ogni utente
+
