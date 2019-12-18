@@ -2,20 +2,21 @@
 #define _GNU_SOURCE 
 #include "../lib/helper.h"
 #include "../lib/helper-client.h"
-//#include <sys/socket.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include <sys/types.h>
-//#include <sys/stat.h>
-//#include <fcntl.h>
-//#include <sys/mman.h>
-//#include <sys/ipc.h>
-//#include <sys/sem.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 #include <signal.h>
 #include <crypt.h>
+#include <time.h>
 
 #define fflush(stdin) while(getchar() != '\n')
 #define audit printf("ok\n")
@@ -25,7 +26,7 @@ int handler_sock;
 
 void random_salt(char salt[3]){
         /* aggiorna salt, passato come parametro, inserendo 2 valori casuali tra
-         * quelli accettabili per il salt nella funzione crypt_r.
+         * quelli accettabili per il salt nella funzione crypt.
          *
          * intervallo di valori per il salt: [a-zA-Z0-9./]
          * a-z: 26
@@ -35,7 +36,8 @@ void random_salt(char salt[3]){
          * totale: 64 */
         char values[64 + 1];
         int i, random_value;
-
+	
+	srand((unsigned int) time(0));
         bzero(salt, 3);
         for (i = 0; i < 26; i++){
                 values[i] = (char) (i + 97);
@@ -604,8 +606,6 @@ void usr_registration_login(int sock_ds, char **usr){
         char *pw, *salt;
 #ifdef CRYPT
 	char *crypted;
-	struct crypt_data data;
-	data.initialized = 0;
 #endif
 
 	handler_sock = sock_ds;
@@ -725,10 +725,15 @@ get_pw:
                 error(772);
         fflush(stdin);
 #else
+get_new_pw:
 	pw = getpass("(per uscire con CTRL+C, premerlo e dare invio)\n");
 	if (strstr(pw, "\003") != NULL){ //è presente un ctrl+c
 		pid_t my_pid = getpid(); //got my pid
 		kill(my_pid, SIGINT);
+	}
+	else if (strcmp(pw, "") == 0 || strstr(pw, " ")){ //inserita stringa vuota
+		printf("Password non valida: non sono ammessi spazi e la password non può essere nulla. Riprova:\n");
+		goto get_new_pw;
 	}
 
 #endif
@@ -777,8 +782,10 @@ get_op1:
 			error(719);
 		bzero(salt, 3);
 		random_salt(salt);
+
 	}
-	crypted = crypt_r(pw, salt, &data);
+	crypted = crypt(pw, salt);
+	free(salt);
 	write_string(sock_ds, crypted, 524);
 #else
         write_string(sock_ds, pw, 781);
@@ -1093,16 +1100,19 @@ void cambia_pass(int sock_ds){
 #else
 	char *crypted;
 	char salt[3];
-	struct crypt_data data;
-	data.initialized = 0;
 
+get_new_pw:
 	new_pw = getpass("(per uscire con CTRL+C, premerlo e dare invio)\n");
 	if (strstr(new_pw, "\003") != NULL){ //è presente un ctrl+c
 		pid_t my_pid = getpid(); //got my pid
 		kill(my_pid, SIGINT);
 	}
+	else if (strcmp(new_pw, "") == 0 || strstr(new_pw, " ")){ //inserita stringa vuota
+		printf("Password non valida: non sono ammessi spazi e la password non può essere nulla. Riprova:\n");
+		goto get_new_pw;
+	}
 	random_salt(salt);
-	crypted = crypt_r(new_pw, salt, &data);
+	crypted = crypt(new_pw, salt);
         write_string(sock_ds, crypted, 1530);
 #endif
         read_int(sock_ds, &ret, 1519);
