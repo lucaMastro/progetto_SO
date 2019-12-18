@@ -1,23 +1,59 @@
+#define _XOPEN_SOURCE
+#define _GNU_SOURCE 
 #include "../lib/helper.h"
 #include "../lib/helper-client.h"
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
+//#include <sys/types.h>
+//#include <sys/stat.h>
+//#include <fcntl.h>
+//#include <sys/mman.h>
+//#include <sys/ipc.h>
+//#include <sys/sem.h>
 #include <signal.h>
+#include <crypt.h>
 
 #define fflush(stdin) while(getchar() != '\n')
 #define audit printf("ok\n")
 
 int handler_sock;
+
+
+void random_salt(char salt[3]){
+        /* aggiorna salt, passato come parametro, inserendo 2 valori casuali tra
+         * quelli accettabili per il salt nella funzione crypt_r.
+         *
+         * intervallo di valori per il salt: [a-zA-Z0-9./]
+         * a-z: 26
+         * A-z: 26
+         * 0-9: 10
+         * ./ :  2 
+         * totale: 64 */
+        char values[64 + 1];
+        int i, random_value;
+
+        bzero(salt, 3);
+        for (i = 0; i < 26; i++){
+                values[i] = (char) (i + 97);
+                values[i + 26] = (char) (i + 65); //maiuscole 
+        }
+        for (i = 52; i < 62; i++)
+                values[i] = (char) (i - 4);
+        values[62] = '.';
+        values[63] = '/';
+
+        for (i = 0; i < 2; i++){
+                random_value = rand() % 64;
+                salt[i] = values[random_value];
+        }
+}
+
+
+
 
 void not_accepted_code(int scan_ret, int *codice_da_modificare, int valore_inaccettabile){
 	/* per questioni di modularità e riusabilità del codice, creo questa funzione che, ogni volta che c'è una scanf per scegliere tra operazioni disponibili, 
@@ -565,7 +601,12 @@ select_operation:
 
 void usr_registration_login(int sock_ds, char **usr){
         int ret, operation, len, retry, scan_ret;
-        char *pw;
+        char *pw, *salt;
+#ifdef CRYPT
+	char *crypted;
+	struct crypt_data data;
+	data.initialized = 0;
+#endif
 
 	handler_sock = sock_ds;
 	signal(SIGINT, handler);
@@ -613,7 +654,7 @@ portal:
                 close_client(sock_ds);
         }
 
-        //same structure for registration and login
+        //same basical structure for registration and login
         printf("\e[1;1H\e[2J");
 
         printf(".....................................................................................\n");
@@ -674,6 +715,7 @@ get_op:
         write_int(sock_ds, retry, 463);
         write_string(sock_ds, *usr, 433);
 
+
 get_pw:
         retry = 0;
 	printf("inserisci password (max %d caratteri):\n", MAX_PW_LEN);
@@ -688,6 +730,7 @@ get_pw:
 		pid_t my_pid = getpid(); //got my pid
 		kill(my_pid, SIGINT);
 	}
+
 #endif
 
         len = strlen(pw);
@@ -721,11 +764,30 @@ get_op1:
         }
 
         write_int(sock_ds, retry, 522);
-        write_string(sock_ds, pw, 523);
+
+#ifdef CRYPT
+	if (operation == 2){//login procedure. read salt
+		read_int(sock_ds, &ret, 712); //check if usr exist
+		if (ret == 2)
+			goto check_ret;
+		read_string(sock_ds, &salt, 715);
+	}
+	else{ //registrazione: devo generare un salt:
+		if ((salt = malloc(sizeof(char) * 3)) == NULL)
+			error(719);
+		bzero(salt, 3);
+		random_salt(salt);
+	}
+	crypted = crypt_r(pw, salt, &data);
+	write_string(sock_ds, crypted, 524);
+#else
+        write_string(sock_ds, pw, 781);
+#endif
 
         //reading response:
         read_int(sock_ds, &ret, 879);
 	free(pw);
+check_ret:
         switch (ret){
                 case 0: //it was allright
                         if (operation == 1){ //it was a registration:
@@ -1027,18 +1089,30 @@ void cambia_pass(int sock_ds){
         if (scanf("%ms", &new_pw) == -1 && errno != EINTR)
                 error(1423);
 	fflush(stdin);
+        write_string(sock_ds, new_pw, 1530);
 #else
+	char *crypted;
+	char salt[3];
+	struct crypt_data data;
+	data.initialized = 0;
+
 	new_pw = getpass("(per uscire con CTRL+C, premerlo e dare invio)\n");
 	if (strstr(new_pw, "\003") != NULL){ //è presente un ctrl+c
 		pid_t my_pid = getpid(); //got my pid
 		kill(my_pid, SIGINT);
 	}
+	random_salt(salt);
+	crypted = crypt_r(new_pw, salt, &data);
+        write_string(sock_ds, crypted, 1530);
 #endif
-        write_string(sock_ds, new_pw, 1530);
         read_int(sock_ds, &ret, 1519);
 
         if (ret)
                 printf("Password cambiata con successo.\n");
+	else{
+		printf("Si è verificato un errore. Chiudo.\n");
+		exit(EXIT_FAILURE);
+	}
         free(new_pw);
 }
 

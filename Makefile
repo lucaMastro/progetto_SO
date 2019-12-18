@@ -38,7 +38,7 @@ $(CLIENT): $(H).o $(HC).o $(CLIENT).o
 	gcc -o $(CLIENT) $(H).o $(HC).o src/$(CLIENT).o 
 
 $(CLIENT-CRYPT): $(H).o $(HCC).o $(CLIENT).o 
-	gcc -o $(CLIENT) $(H).o $(HCC).o src/$(CLIENT).o 
+	gcc -o $(CLIENT) $(H).o $(HCC).o src/$(CLIENT).o -lcrypt 
 
 $(CLIENT).o:  
 	gcc -o src/$(CLIENT).o $(CSRC) -c

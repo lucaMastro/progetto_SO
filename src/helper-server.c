@@ -1,19 +1,16 @@
-#define _XOPEN_SOURCE
-#define _GNU_SOURCE
 #include "../lib/helper.h"
 #include "../lib/helper-server.h"
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+//#include <sys/types.h>
+//#include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/mman.h>
-#include <crypt.h>
-#include <sys/ipc.h>
+//#include <sys/mman.h>
+//#include <sys/ipc.h>
 #include <sys/sem.h>
 
 #define fflush(stdin) while(getchar() != '\n')
@@ -476,35 +473,6 @@ is_read_op:
 }
 
 
-void random_salt(char salt[3]){
-	/* aggiorna salt, passato come parametro, inserendo 2 valori casuali tra
-	 * quelli accettabili per il salt nella funzione crypt_r.
-	 *
-	 * intervallo di valori per il salt: [a-zA-Z0-9./]
-         * a-z: 26
-         * A-z: 26
-         * 0-9: 10
-         * ./ :  2 
-         * totale: 64 */
-        char values[64 + 1];
-	int i, random_value;
-
-	bzero(salt, 3);
-        for (i = 0; i < 26; i++){
-                values[i] = (char) (i + 97);
-                values[i + 26] = (char) (i + 65); //maiuscole 
-        }
-        for (i = 52; i < 62; i++)
-                values[i] = (char) (i - 4);
-        values[62] = '.';
-        values[63] = '/';
-
-	for (i = 0; i < 2; i++){
-		random_value = rand() % 64;
-		salt[i] = values[random_value];
-	}
-}
-
 
 int managing_usr_registration_login(int acc_sock, char **usr, int sem_log){
         int operation, len_usr, len_pw, i, ret, can_i_exit = 0, retry;
@@ -515,9 +483,7 @@ int managing_usr_registration_login(int acc_sock, char **usr, int sem_log){
 	char stored_pw[MAX_PW_LEN + 1];
 #else
 	char stored_pw[13 + 1]; //13 is the crypted password's len
-	char salt[2 + 1], *crypted;
-	struct crypt_data data;
-	data.initialized = 0;
+	char salt[2 + 1];
 #endif
 
 check_operation:
@@ -526,7 +492,7 @@ check_operation:
         bzero(stored_pw, MAX_PW_LEN + 1);
 #else
         bzero(stored_pw, 14);
-	random_salt(salt);
+	bzero(salt, 3);
 #endif
 
         ret = 0;
@@ -563,29 +529,6 @@ check_operation:
 			close_server(acc_sock, *usr, 0);
 			return 0;
 		}
-
-                /*      READING IF RETRY GETTING PASSWORD       */
-                check_pw_restart:
-                if (read_int(acc_sock, &retry, 344)){
-			close_server(acc_sock, *usr, 0);
-			return 0;
-		}
-                switch (retry){
-                        case 1:
-                                goto check_pw_restart;
-                        case 2:
-                                goto check_operation;
-                        default:
-                                break;
-                }
-
-                /*      READING PASSWORD        */
-                if (read_string(acc_sock, &pw, 958)){
-			close_server(acc_sock, *usr, 0);
-			return 0;
-		}
-
-                len_pw = strlen(pw);
 		len_usr = strlen(*usr);
 
                 /*      MAKING THE STRING: ".db/<name_user>.txt"        */
@@ -596,14 +539,38 @@ check_operation:
                 sprintf(file_name, ".db/%s.txt", *usr);
 
 #ifdef CRYPT
-		/*crypting password*/
 		len_pw = 13; // strlen(crypted) == 13
 
 #endif
 
+		/* se è una registrazione, leggo la password, altrimenti 
+		 * devo prima inviare il salt con cui è stata cryptata 
+		 * la password */
                 if (operation == 1){
                         printf("selected registration option.\n");
-                        //i have to sign in the username
+
+	                /*      READING IF RETRY GETTING PASSWORD       */
+        	        check_pw_restart_reg:
+                	if (read_int(acc_sock, &retry, 344)){
+				close_server(acc_sock, *usr, 0);
+				return 0;
+			}
+                	switch (retry){
+                        	case 1:
+                                	goto check_pw_restart_reg;
+	                        case 2:
+        	                        goto check_operation;
+                	        default:
+                        	        break;
+	                }
+
+        	        /*      READING PASSWORD        */
+                	if (read_string(acc_sock, &pw, 958)){
+				close_server(acc_sock, *usr, 0);
+				return 0;
+			}
+        	        len_pw = strlen(pw);
+
                         if ((fileid = open(file_name, O_CREAT | O_APPEND | O_RDWR | O_EXCL, 0666)) == -1){
                                 if (errno == EEXIST){ //file gia esistente
                                         ret = 1;
@@ -614,14 +581,8 @@ check_operation:
                         }
 
                         //ive created file. i have to write pw and a bit: default 0.
-	#ifdef CRYPT
-			crypted = crypt_r(pw, salt, &data);
-                        if (write(fileid, crypted, len_pw) == -1 || write(fileid, "\n0", 2) == -1)
-                                error(885);	
-	#else
                         if (write(fileid, pw, len_pw) == -1 || write(fileid, "\n0", 2) == -1)
-                                error(885);
-	#endif
+    				error(885);
 
                         //updating the list
                         fileid2 = open(".db/list.txt", O_CREAT|O_RDWR|O_APPEND, 0666);
@@ -639,6 +600,22 @@ check_operation:
                 }
 
                 else{//it was a log in operation
+
+	                /*      READING IF RETRY GETTING PASSWORD       */
+        	        check_pw_restart_log:
+                	if (read_int(acc_sock, &retry, 344)){
+				close_server(acc_sock, *usr, 0);
+				return 0;
+			}
+                	switch (retry){
+                        	case 1:
+                                	goto check_pw_restart_log;
+	                        case 2:
+        	                        goto check_operation;
+                	        default:
+                        	        break;
+	                }
+
                         //opening file:
                         printf("selected login option.\n");
 			sops.sem_flg = 0;
@@ -654,6 +631,8 @@ check_operation:
                                         error(900);
                         }
 		#ifdef CRYPT
+			//invio conferma esistenza.
+			write_int(acc_sock, 1, 654); 
                         /*      STARTING LOGIN PROCEDURE        */
                         lseek(fileid, 0, SEEK_SET); //to start
 			for (i = 0; i < 13 + 1; i++){
@@ -668,14 +647,10 @@ check_operation:
 				if (i == 0 || i == 1)
 					salt[i] = curr;
                         }
-			crypted = crypt_r(pw, salt, &data);
+			
+			/*writing salt*/
+			write_string(acc_sock, salt, 672);
 
-                        /*      CHECKING IF PW IS CORRECT       */
-                        if (strcmp(stored_pw, crypted) != 0){
-                                printf("no matching pw\n");
-                                ret = 2;
-                                goto send_to_client;
-                        }
 
 		#else
                         /*      STARTING LOGIN PROCEDURE        */
@@ -689,13 +664,21 @@ check_operation:
                                         stored_pw[i] = curr;
                         }
 
+		#endif
+
+        	        /*      READING PASSWORD        */
+                	if (read_string(acc_sock, &pw, 958)){
+				close_server(acc_sock, *usr, 0);
+				return 0;
+			}
+	
+
                         /*      CHECKING IF PW IS CORRECT       */
                         if (strcmp(stored_pw, pw) != 0){
                                 printf("no matching pw\n");
                                 ret = 2;
                                 goto send_to_client;
                         }
-		#endif
                         /*      CHECK IF YET LOGED      */
 			/* deve essere fatto in modo atomico */
 			if (semop(sem_log, &sops, 1) == -1)
@@ -1070,13 +1053,6 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
         int exist, len, fileid, pw_len, ret = 0;
         char *dest_file, *new_pw;
 
-#ifdef CRYPT
-	char salt[2 + 1];
-	char *crypted;
-	struct crypt_data data;
-	data.initialized = 0;
-#endif
-
 	len = strlen(my_usr) + 9;
         dest_file = (char *) malloc(sizeof(char) * len);
         if (dest_file == NULL)
@@ -1088,9 +1064,8 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 	}
 
         pw_len = strlen(new_pw);
-//	printf("pw_len = %d\n", pw_len);
 
-        exist = check_destination(&my_usr, &dest_file);
+        check_destination(&my_usr, &dest_file);
 	/* non è necessario un controllo su exist, perchè se sto chiamando la 
 	 * funzione devo essere per forza loggato */
 
@@ -1102,29 +1077,18 @@ int mng_cambio_pass(int acc_sock, char *my_usr){
 		goto exit_lab;
 	}	
 	free(dest_file);
-#ifdef CRYPT
-	/*crypto la pass*/
-	random_salt(salt);
-	crypted = crypt_r(new_pw, salt, &data);
-	/*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */
-	if (write(fileid, crypted, strlen(crypted)) == -1 || write(fileid, "\n1", 2) == -1) {
-		perror("error at 1559");
-		goto exit_lab;
-	}
-#else
+
 	/*      SCRIVO LA NUOVA PW E IL LOG-BIT = 1     */
 	if (write(fileid, new_pw, pw_len) == -1 || write(fileid, "\n1", 2) == -1) {
 		perror("error at 1559");
 		goto exit_lab;
 	}
-#endif
 	/*      CHIUDO FILE     */
 	if (close(fileid) == -1){
 		perror("error at 1566");
 		goto exit_lab;
 	}
 	ret = 1;
-       // }
 exit_lab:
 	free(new_pw);
         write_int(acc_sock, ret, 1572);
