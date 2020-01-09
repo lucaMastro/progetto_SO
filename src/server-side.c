@@ -93,9 +93,8 @@ int main(int argc, char *argv[]){
 	port_num = strtol(port, &port, 0); 
 	
 
-	signal(SIGINT, handler_sigint);
-
-	//INITIALIZING PARAMS
+	//INITIALIZING PARAMS. durante l'inizializzazione, non voglio interruzioni	
+	signal(SIGINT, SIG_IGN);
 	
 	sem_write = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666 );
 	if (sem_write == -1){
@@ -119,6 +118,8 @@ int main(int argc, char *argv[]){
 	message_list = inizializza_server();
 	printf("struttura per gestione dei messaggi inizializzata\n");
 	
+	signal(SIGINT, handler_sigint);
+
 	sock_ds = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock_ds == -1){
 		perror("error");
@@ -134,8 +135,8 @@ int main(int argc, char *argv[]){
 	bzero((char*) &server_addr, sizeof(server_addr));
 	
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(port_num);
-	server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	server_addr.sin_port = htons(port_num); //convert the short to the network byte order
+	server_addr.sin_addr.s_addr = htonl(INADDR_ANY); //convert the long to the network byte order
 	server_len = sizeof(server_addr);
 	
 	client_len = sizeof(struct sockaddr_in);
@@ -159,14 +160,14 @@ int main(int argc, char *argv[]){
 		exit(EXIT_FAILURE);
 	}
 	//creating the list of users
-        fileid = open(".db/list.txt", O_CREAT, 0666);
+        fileid = open(".db/list.txt", O_CREAT, 0666); //O_EXCL non specificato, non ritorna -1 se il file esiste già
         if (fileid == -1)
                 error(142);
         else{
+		/* il server è stato lanciato: chiunque fosse rimasto online per qualsiasi motivo viene sloggato.*/
 		slogga_tutti();
                 close(fileid);
 	}
-		
 
 	while(1){
 		
@@ -181,13 +182,14 @@ int main(int argc, char *argv[]){
 			exit(EXIT_FAILURE);
 		} 
 	
+		/*inet_ntoa converte i byte in network order in una stringa decimale puntata. chiamate successive sovrascrivono il buffer*/
 		printf("\nconnessione avvenuta da parte dell'indirizzo %s\n", inet_ntoa(client_addr.sin_addr));
 	
 		if (pthread_create(&tid, NULL, thread_func, (void*) acc_sock)){
 			perror("impossibile creare thread");
 			exit(EXIT_FAILURE);
 		}
-		if (pthread_detach(tid)){
+		if (pthread_detach(tid)){ //rilascia automaticamente le risorse quando il thread termina
 			perror("error detatching");
 			exit(EXIT_FAILURE);
 		}
@@ -214,7 +216,7 @@ int ParseCmdLine(int argc, char *argv[], char **szPort)
 			}
 		++n;
     }
-	if (argc==1){
+	if (argc == 1 || argc > 3){
 	       	printf("Sintassi:\n\n");
 		printf("    server -p (porta) [-h]\n\n");
 	  	exit(EXIT_SUCCESS);

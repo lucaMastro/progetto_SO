@@ -841,8 +841,9 @@ check_ret:
 void close_client(int sock_ds){
 
         close(sock_ds);
-        printf("L'applicazione si chiuderà in 3 secondi. Arrivederci :)\n");
-        /*if (!sleep(3)){
+	printf("Arrivederci :)\n");
+        /*printf("L'applicazione si chiuderà in 3 secondi. Arrivederci :)\n");
+        if (!sleep(3)){
                 printf("\e[1;1H\e[2J");
         }*/
 	exit(EXIT_SUCCESS);

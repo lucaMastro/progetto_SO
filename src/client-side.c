@@ -36,6 +36,8 @@ int main(int argc, char *argv[]){
 	signal(SIGPIPE, handler_sigpipe);
 	signal(SIGINT, SIG_IGN);
 
+	printf("\e[1;1H\e[2J");	
+
 	my_usrname = malloc(sizeof(char) * MAX_USR_LEN);
 	if (my_usrname == NULL){
 		perror("error initializing usrname");
@@ -78,7 +80,6 @@ int main(int argc, char *argv[]){
                 exit(-1);
         }
 	
-	printf("\e[1;1H\e[2J");	
 	printf("Connessione al server riuscita.\nPremi INVIO per continuare.\n");
 	fflush(stdin);
 
@@ -119,7 +120,7 @@ int ParseCmdLine(int argc, char *argv[], char **szAddress, char **szPort) {
 				}
 		++n;
     }
-	if (argc==1)
+	if (argc == 1 || argc > 5)
 	{
 	    printf("Sintassi:\n\n");
 		printf("    client -a (indirizzo remoto) -p (porta remota) [-h].\n\n");
